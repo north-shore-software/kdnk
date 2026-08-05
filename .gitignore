@@ -1,0 +1,6 @@
+/.idea/
+/bin/
+pb_data/
+examples/config.env
+examples/**/bin/
+/.claude/
