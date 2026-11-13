@@ -1,3 +1,5 @@
+// Package ollama implements llm.Provider for an Ollama server, with helpers to pull and preload
+// models.
 package ollama
 
 import (
@@ -18,6 +20,8 @@ import (
 
 const defaultModel = "gemma4"
 
+// Base is the Ollama server URL. It is read once, at package initialisation, from OLLAMA_HOST with
+// any trailing slash removed, and defaults to http://localhost:11434.
 var Base = func() string {
 	if v := os.Getenv("OLLAMA_HOST"); v != "" {
 		return strings.TrimRight(v, "/")
@@ -25,7 +29,9 @@ var Base = func() string {
 	return "http://localhost:11434"
 }()
 
+// OllamaProvider streams completions from the /api/chat endpoint of the Ollama server at Base.
 type OllamaProvider struct {
+	// Model is the Ollama model name. If empty, gemma4 is used.
 	Model string
 }
 
@@ -43,6 +49,9 @@ var (
 	ctxLenCache = make(map[string]int)
 )
 
+// GetModelContextLength returns the context length Ollama's /api/show reports for model, caching
+// it per model for the life of the process. It returns 4096 without caching if the request fails
+// or takes over 5 seconds, and caches 4096 if the response has no context length.
 func GetModelContextLength(ctx context.Context, model string) int {
 	ctxLenMu.RLock()
 	val, ok := ctxLenCache[model]
@@ -146,6 +155,11 @@ func normalizeArguments(raw json.RawMessage) json.RawMessage {
 	return raw
 }
 
+// Stream implements llm.Provider. It requests the model's full context length, from
+// GetModelContextLength, and keeps the model loaded for 60 minutes. It returns an error only if
+// the request cannot be sent: a non-200 response is not detected and yields an empty stream. Each
+// tool call is emitted as an EventToolStart followed by an EventToolEnd, with string-encoded
+// arguments decoded to raw JSON.
 func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Completion, error) {
 	modelName := p.model()
 
@@ -276,6 +290,9 @@ type ollamaGenerateRequest struct {
 	Options   map[string]any `json:"options,omitempty"`
 }
 
+// PreloadModel loads model into the Ollama server's memory, with the same context length and
+// 60-minute keep-alive as Stream. It times out after 5 minutes and returns an error on a non-200
+// status.
 func PreloadModel(ctx context.Context, model string) error {
 	body, err := json.Marshal(ollamaGenerateRequest{
 		Model:     model,
@@ -316,6 +333,9 @@ type ollamaPullChunk struct {
 	Error     string `json:"error"`
 }
 
+// PullModel downloads model to the Ollama server, calling onProgress, if non-nil, for each
+// progress update. It returns an error on a non-200 status or if Ollama reports one during the
+// pull.
 func PullModel(ctx context.Context, model string, onProgress func(status string, completed, total int64)) error {
 	body, err := json.Marshal(ollamaPullRequest{Name: model, Stream: true})
 	if err != nil {

@@ -1,3 +1,4 @@
+// Package server builds a PocketBase application that serves a plugin.Plugin as a chat API.
 package server
 
 import (
@@ -14,12 +15,28 @@ import (
 	"github.com/north-shore-software/agent-smith/plugin"
 )
 
+// Config configures New.
 type Config struct {
-	Plugin          plugin.Plugin
-	Web             fs.FS
+	// Plugin is the application to serve. It is required.
+	Plugin plugin.Plugin
+	// Web, if non-nil, is served for GET requests no other route matches, falling back to
+	// index.html for paths it does not contain.
+	Web fs.FS
+	// HideStartBanner suppresses PocketBase's startup banner.
 	HideStartBanner bool
 }
 
+// New returns a PocketBase app that serves cfg.Plugin. It exits the process with log.Fatal if
+// cfg.Plugin is nil.
+//
+// When the app starts serving, it creates any of the plugin's collections that do not exist,
+// enables a default set of rate limits if rate limiting is off, schedules a daily 03:00 job that
+// deletes guest users created over 30 days ago with no message in the last 30 days, and registers
+// these routes:
+//
+//   - POST /api/guest creates a guest user and returns its auth token and generated credentials.
+//   - POST /api/guest/upgrade gives the authenticated guest an email and password, making it a regular user.
+//   - POST /api/chat stores the request's new messages and streams the model's response as server-sent events, running the plugin's tools for up to 4 model calls.
 func New(cfg Config) *pocketbase.PocketBase {
 	if cfg.Plugin == nil {
 		log.Fatal("server.New: Config.Plugin is required")
@@ -85,6 +102,8 @@ func ensureCollections(app core.App, p plugin.Plugin) error {
 	return nil
 }
 
+// EnsureReady exits the process with log.Fatal if no provider factory has been registered with
+// llm.SetProviderFactory.
 func EnsureReady() {
 	if !llm.Ready() {
 		log.Fatal("server.EnsureReady: no LLM provider registered; call llm.SetProviderFactory before EnsureReady")

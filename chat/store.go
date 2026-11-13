@@ -10,10 +10,15 @@ import (
 )
 
 const (
+	// CollectionConversation is the name of the PocketBase collection holding conversations.
 	CollectionConversation = "chat_conversation"
-	CollectionMessage      = "chat_message"
+	// CollectionMessage is the name of the PocketBase collection holding messages.
+	CollectionMessage = "chat_message"
 )
 
+// FindOrCreateConversation returns the conversation owned by ownerID whose
+// external_conversation_id is clientID, creating it if none exists. If creation fails and the
+// conversation now exists, the existing record is returned. ctx is unused.
 func FindOrCreateConversation(ctx context.Context, app core.App, ownerID, clientID string) (*core.Record, error) {
 	params := dbx.Params{"owner": ownerID, "cid": clientID}
 	const filter = "owner = {:owner} && external_conversation_id = {:cid}"
@@ -39,6 +44,8 @@ func FindOrCreateConversation(ctx context.Context, app core.App, ownerID, client
 	return rec, nil
 }
 
+// LoadMessages returns the messages of conversation ordered by seq. Records whose content does not
+// decode as a Message are skipped. ctx is unused.
 func LoadMessages(ctx context.Context, app core.App, conversation *core.Record) ([]Message, error) {
 	recs, err := app.FindRecordsByFilter(
 		CollectionMessage,
@@ -60,6 +67,8 @@ func LoadMessages(ctx context.Context, app core.App, conversation *core.Record) 
 	return msgs, nil
 }
 
+// PersistMessage saves msg as a new message in conversation with the given seq and model name.
+// model may be empty. ctx is unused.
 func PersistMessage(ctx context.Context, app core.App, conversation *core.Record, msg Message, seq int, model string) error {
 	col, err := app.FindCollectionByNameOrId(CollectionMessage)
 	if err != nil {

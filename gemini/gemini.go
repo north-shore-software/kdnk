@@ -1,3 +1,4 @@
+// Package gemini implements llm.Provider for Google's Gemini API.
 package gemini
 
 import (
@@ -18,7 +19,10 @@ import (
 
 const geminiBase = "https://generativelanguage.googleapis.com/v1beta"
 
+// Provider streams completions from the Gemini streamGenerateContent endpoint. It reads the API
+// key from GEMINI_API_KEY on every call.
 type Provider struct {
+	// Model is the Gemini model name, such as "gemini-3.6-flash". It is required.
 	Model string
 }
 
@@ -70,6 +74,11 @@ type geminiStreamChunk struct {
 	} `json:"usageMetadata"`
 }
 
+// Stream implements llm.Provider. System messages are joined into the system instruction, and the
+// "assistant" role is sent as Gemini's "model" role. It returns an error if GEMINI_API_KEY or
+// Model is empty, or if the request fails or returns a non-2xx status. Each tool call is emitted
+// as an EventToolStart followed by an EventToolEnd with the full arguments. A second call to the
+// same tool in one response is dropped. Usage has no TokensPerSecond.
 func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Completion, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {

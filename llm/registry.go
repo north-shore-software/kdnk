@@ -2,17 +2,23 @@ package llm
 
 import "fmt"
 
+// ModelSet names a fixed group of models, one per Role.
 type ModelSet string
 
 const (
+	// SetLocal uses gemma4, served by Ollama.
 	SetLocal ModelSet = "local"
+	// SetCloud uses gemini-3.6-flash, served by Gemini.
 	SetCloud ModelSet = "cloud"
 )
 
+// ProviderID names an LLM backend.
 type ProviderID string
 
 const (
+	// ProviderOllama is an Ollama server.
 	ProviderOllama ProviderID = "ollama"
+	// ProviderGemini is Google's Gemini API.
 	ProviderGemini ProviderID = "gemini"
 )
 
@@ -38,6 +44,7 @@ var credentialEnv = map[ProviderID]string{
 	ProviderGemini: "GEMINI_API_KEY",
 }
 
+// ParseModelSet returns the ModelSet named s, or an error if s is not "local" or "cloud".
 func ParseModelSet(s string) (ModelSet, error) {
 	switch ModelSet(s) {
 	case SetLocal:
@@ -49,6 +56,8 @@ func ParseModelSet(s string) (ModelSet, error) {
 	}
 }
 
+// ModelFor returns the model that set s uses for role r, or an error if s is unknown or has no
+// model for r.
 func ModelFor(s ModelSet, r Role) (string, error) {
 	roles, ok := modelsBySetRole[s]
 	if !ok {
@@ -61,6 +70,9 @@ func ModelFor(s ModelSet, r Role) (string, error) {
 	return name, nil
 }
 
+// ProviderFor returns the provider that serves model, or an error if model is not in the built-in
+// table: gemma4 (Ollama), and gemini-3.5-flash, gemini-3.5-flash-lite, gemini-3.6-flash and
+// gemini-3.1-pro-preview (Gemini).
 func ProviderFor(model string) (ProviderID, error) {
 	p, ok := providerByModel[model]
 	if !ok {
@@ -69,10 +81,13 @@ func ProviderFor(model string) (ProviderID, error) {
 	return p, nil
 }
 
+// CredentialEnv returns the name of the environment variable holding p's API key: GEMINI_API_KEY
+// for Gemini, and "" for Ollama or an unknown provider.
 func CredentialEnv(p ProviderID) string {
 	return credentialEnv[p]
 }
 
+// Roles returns every Role. RoleChat is the only one.
 func Roles() []Role {
 	return []Role{RoleChat}
 }
