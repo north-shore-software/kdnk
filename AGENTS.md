@@ -74,11 +74,19 @@ This is not terseness for its own sake. Never drop signal to save tokens — dro
 
 ## Code
 
-- **Never write comments.** None.
+- **No comments, except godoc.** Every exported identifier in a library package gets a doc
+  comment describing what it does, as it behaves now. Nothing else: no inline comments, no
+  comments on unexported code, none in examples.
 - **Never write tests unless explicitly asked.**
-- **Code is the only source of truth.** Comments and stray markdown are stale, aspirational, or
-  wrong. Do not trust them, cite them, or reason from them — read the code and find out. This file
-  is the only exception.
+- **Code is the only source of truth.** Comments, `docs/`, and stray markdown can be stale or
+  wrong. Do not reason from them — read the code. When code and a doc comment or `docs/` page
+  disagree, the code is right and the doc is a bug: report it.
+
+## Docs
+
+`docs/*.md` is the developer documentation; `docs/site/` is the Astro build; `docs/reference/`
+is generated from godoc and never hand-edited. When you change a public API, update its doc
+comment and any `docs/` page that describes it in the same change.
 
 ## Out-of-scope discoveries
 
