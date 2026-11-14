@@ -34,8 +34,8 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	agentsmith "github.com/north-shore-software/agent-smith"
-	"github.com/north-shore-software/agent-smith/gemini"
+	"github.com/north-shore-software/agent-smith/agentsmith"
+	"github.com/north-shore-software/agent-smith/providers/gemini"
 )
 
 type Note struct {
@@ -124,6 +124,6 @@ An OpenAI-compatible endpoint, so that tools such as [`llm`](https://llm.dataset
 
 ## Next steps
 
-- [Writing a plugin](/plugins/) covers collections, sessions and tools in depth.
+- [Building an app](/apps/) covers collections, sessions and tools in depth.
 - [LLM providers](/providers/) covers Ollama and custom providers.
 - [Example: todo](/examples/todo/) is a complete app with a web UI.

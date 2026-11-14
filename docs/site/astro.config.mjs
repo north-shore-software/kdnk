@@ -14,7 +14,7 @@ export default defineConfig({
       title: 'Agent Smith',
       sidebar: [
         { label: 'Start here', items: ['quickstart'] },
-        { label: 'Guides', items: ['plugins', 'server', 'providers'] },
+        { label: 'Guides', items: ['apps', 'server', 'providers'] },
         { label: 'Examples', items: pages('examples') },
         { label: 'API reference', items: pages('reference') },
       ],
