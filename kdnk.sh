@@ -247,8 +247,52 @@ configure_local() {
 	OLLAMA_HOST_VALUE="$host"
 }
 
+check_go() {
+	command -v go >/dev/null 2>&1 || die "go is not on PATH. Install it from https://go.dev/dl/"
+
+	local want_go have_go
+	want_go="$(sed -n 's/^go[[:space:]]\{1,\}\([0-9][0-9.]*\).*/\1/p' "$REPO_ROOT/go.mod" | head -1)"
+	have_go="$(go env GOVERSION)"
+	have_go="${have_go#go}"
+
+	if [ -n "$want_go" ] && ! version_ge "$have_go" "$want_go"; then
+		die "go $have_go is too old; go.mod needs $want_go or newer."
+	fi
+
+	say "go $have_go at $(command -v go), go.mod wants $want_go. ${GRN}ok${R}"
+}
+
+check_node() {
+	command -v node >/dev/null 2>&1 || die "node is not on PATH. Install it from https://nodejs.org/"
+	command -v pnpm >/dev/null 2>&1 || die "pnpm is not on PATH. Install it from https://pnpm.io/installation"
+	say "node $(node -v) at $(command -v node), pnpm $(pnpm -v) at $(command -v pnpm). ${GRN}ok${R}"
+}
+
+pnpm_install() {
+	(cd "$1" && run_cmd pnpm install) || die "pnpm install failed in ${1#"$REPO_ROOT"/}."
+}
+
+web_dirs() {
+	printf '%s\n' "$REPO_ROOT/docs/site"
+	local dir
+	for dir in "$REPO_ROOT"/examples/*/web/; do
+		[ -f "$dir/package.json" ] && printf '%s\n' "${dir%/}"
+	done
+	return 0
+}
+
 cmd_setup() {
-	step "1. Config setup"
+	step "1. Checking tools"
+	check_go
+	check_node
+
+	step "2. Installing JavaScript dependencies"
+	local dir
+	while IFS= read -r dir; do
+		pnpm_install "$dir"
+	done < <(web_dirs)
+
+	step "3. Config setup"
 
 	cat <<EOF
 
@@ -289,7 +333,7 @@ EOF
 		configure_local
 	fi
 
-	step "2. Which port?"
+	step "4. Which port?"
 
 	PORT=""
 	while [ -z "$PORT" ]; do
@@ -310,7 +354,7 @@ your rebuild having no effect."
 
 	say "using port ${B}${PORT}${R}"
 
-	step "3. Writing configuration"
+	step "5. Writing configuration"
 
 	# The API key lands in this file, so create it private and fill it after —
 	# chmod'ing post-write leaves a window at the ambient umask.
@@ -328,6 +372,8 @@ your rebuild having no effect."
 }
 
 cmd_run() {
+	local mode="$1"
+	shift
 	[ -f "$CONFIG_FILE" ] || {
 		warn "no configuration found at examples/config.env. Running setup first..."
 		cmd_setup
@@ -360,20 +406,24 @@ cmd_run() {
 	local EXAMPLE
 	EXAMPLE="$(pick_example "$example_arg")"
 
-	step "1. Checking Go"
-	command -v go >/dev/null 2>&1 || die "go is not on PATH. Install it from https://go.dev/dl/"
-
-	want_go="$(sed -n 's/^go[[:space:]]\{1,\}\([0-9][0-9.]*\).*/\1/p' "$REPO_ROOT/go.mod" | head -1)"
-	have_go="$(go env GOVERSION)"
-	have_go="${have_go#go}"
-
-	if [ -n "$want_go" ] && ! version_ge "$have_go" "$want_go"; then
-		die "go $have_go is too old; go.mod needs $want_go or newer."
+	local web_dir="$REPO_ROOT/examples/$EXAMPLE/web"
+	local has_web=""
+	[ -f "$web_dir/package.json" ] && has_web=1
+	if [ "$mode" = "dev" ] && [ -z "$has_web" ]; then
+		die "$EXAMPLE has no Vite app (examples/$EXAMPLE/web/package.json). Use: ./kdnk.sh run $EXAMPLE"
 	fi
 
-	say "go $have_go at $(command -v go), go.mod wants $want_go. ${GRN}ok${R}"
+	step "1. Checking tools"
+	check_go
+	[ -z "$has_web" ] || check_node
 
 	step "2. Building $EXAMPLE"
+	if [ -n "$has_web" ]; then
+		[ -d "$web_dir/node_modules" ] || pnpm_install "$web_dir"
+		if [ "$mode" = "run" ]; then
+			(cd "$web_dir" && run_cmd pnpm build) || die "web build failed."
+		fi
+	fi
 	mkdir -p "$REPO_ROOT/examples/$EXAMPLE/bin"
 	run_cmd env CGO_ENABLED=0 go build -o "$REPO_ROOT/examples/$EXAMPLE/bin/$EXAMPLE" "./examples/$EXAMPLE" || die "build failed."
 
@@ -395,7 +445,10 @@ having no effect."
 		export OLLAMA_HOST="$OLLAMA_HOST_VALUE"
 	fi
 
-	cat <<EOF
+	local server=("$REPO_ROOT/examples/$EXAMPLE/bin/$EXAMPLE" serve --http=127.0.0.1:"$PORT" --dir "$REPO_ROOT/examples/$EXAMPLE/pb_data")
+
+	if [ "$mode" = "run" ]; then
+		cat <<EOF
 
 Starting ${B}$EXAMPLE${R} at ${B}http://127.0.0.1:$PORT/${R}
 
@@ -403,8 +456,26 @@ Dashboard: http://127.0.0.1:$PORT/_/
 First message suggestion: ${B}$(first_message "$EXAMPLE")${R}
 
 EOF
+		exec "${server[@]}"
+	fi
 
-	exec "$REPO_ROOT/examples/$EXAMPLE/bin/$EXAMPLE" serve --http=127.0.0.1:"$PORT" --dir "$REPO_ROOT/examples/$EXAMPLE/pb_data"
+	cat <<EOF
+
+Starting ${B}$EXAMPLE${R} API at ${B}http://127.0.0.1:$PORT/${R} and the Vite dev server below.
+Open the Vite URL; it forwards /api to port $PORT.
+
+Dashboard: http://127.0.0.1:$PORT/_/
+First message suggestion: ${B}$(first_message "$EXAMPLE")${R}
+
+EOF
+
+	"${server[@]}" &
+	SERVER_PID=$!
+	trap 'kill "$SERVER_PID" 2>/dev/null; wait "$SERVER_PID" 2>/dev/null' EXIT
+	trap 'exit 130' INT TERM
+
+	cd "$web_dir"
+	KDNK_PORT="$PORT" pnpm dev
 }
 
 cmd_clear() {
@@ -442,8 +513,10 @@ usage() {
 	say "Usage: ./kdnk.sh <command> [example]"
 	say ""
 	say "Commands:"
-	say "  setup            Configure model set, API key, Ollama host, and port"
+	say "  setup            Check tools, install JavaScript dependencies, and configure"
+	say "                   model set, API key, Ollama host, and port"
 	say "  run [example]    Build and run an example${names:+ ($names)}"
+	say "  dev [example]    Run an example's server and its Vite dev server"
 	say "  clear [example]  Delete an example's local data"
 	say "  docs             Run the docs site dev server"
 	say ""
@@ -459,7 +532,8 @@ shift || true
 
 case "$subcmd" in
 	setup) cmd_setup ;;
-	run) cmd_run "${1:-}" ;;
+	run) cmd_run run "${1:-}" ;;
+	dev) cmd_run dev "${1:-}" ;;
 	clear) cmd_clear "${1:-}" ;;
 	docs) cmd_docs ;;
 	-h|--help|help) usage 0 ;;

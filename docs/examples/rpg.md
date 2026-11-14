@@ -45,8 +45,13 @@ Limits of the current design:
 
 ## The web UI
 
-`examples/rpg/web/index.html` is the same page as the [todo example](/examples/todo/#the-web-ui)
-with a terminal-style theme.
+`examples/rpg/web` is a Vite project using TypeScript and React. Its entry page,
+`examples/rpg/web/index.html`, is the same page as the [todo example](/examples/todo/#the-web-ui)
+with a terminal-style theme. React is installed but not used by the page yet.
+
+`pnpm build` writes the page to `web/dist/app`, and `main.go` embeds `web/dist` and serves
+`web/dist/app`. Only `web/dist/.gitkeep` is committed, so a Go build that skips `pnpm build`
+compiles but serves nothing at `/`.
 
 ## Running it
 
@@ -57,4 +62,8 @@ From the repository root:
 ./kdnk.sh run rpg
 ```
 
-Open the page and send `let's start`. `./kdnk.sh clear rpg` deletes the game.
+`run` builds the web app with `pnpm build`, then builds and starts the Go server. Open the page and
+send `let's start`. `./kdnk.sh clear rpg` deletes the game.
+
+To work on the frontend, use `./kdnk.sh dev rpg` instead. It starts the Go server on the configured
+port and a Vite dev server that forwards `/api` to it. Open the URL Vite prints.

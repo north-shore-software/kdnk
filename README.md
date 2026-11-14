@@ -33,12 +33,13 @@ Built on [PocketBase](https://pocketbase.io/): one Go binary, SQLite, admin dash
 
 ## Getting started
 
-Requires Go 1.24.1 or newer, and either a [Gemini API key](https://aistudio.google.com/apikey) or a
-local [Ollama](https://ollama.com/).
+Requires Go 1.27 or newer, Node.js and [pnpm](https://pnpm.io/installation), and either a
+[Gemini API key](https://aistudio.google.com/apikey) or a local [Ollama](https://ollama.com/).
 
 ```sh
-./kdnk.sh setup   # specify API keys, or a local model
+./kdnk.sh setup   # check tools, install JavaScript dependencies, specify API keys or a local model
 ./kdnk.sh run     # build and serve one of the example projects
+./kdnk.sh dev     # serve an example with a Vite dev server for its frontend
 ./kdnk.sh clear   # clear an example's local data
 ```
 
