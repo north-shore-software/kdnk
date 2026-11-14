@@ -42,12 +42,23 @@ type Record[T any] struct {
 }
 
 // Store gives Go code access to a collection's records, scoped to a session's user.
-type Store[T any] struct{}
+type Store[T any] struct {
+	name        string
+	restriction restriction
+}
 
-// Collection declares a collection named name whose fields come from T. It is not implemented
-// yet: it records nothing and returns an empty Store.
+// Collection declares a collection named name whose fields come from T, and adds its generated
+// tools to r. The last restriction in opts decides which tools are generated. The collection
+// itself is not recorded on r yet, and the generated tools always return an error.
 func Collection[T any](r *Registry, name string, opts ...CollectionOption) *Store[T] {
-	return &Store[T]{}
+	c := &Store[T]{name: name}
+	for _, o := range opts {
+		if rs, ok := o.(restriction); ok {
+			c.restriction = rs
+		}
+	}
+	r.tools = append(r.tools, c.tools()...)
+	return c
 }
 
 // Create adds a record owned by s's user. It is not implemented yet and always returns an error.

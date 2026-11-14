@@ -6,7 +6,9 @@ import "errors"
 var errNotImplemented = errors.New("agentsmith: not implemented")
 
 // Registry collects what an app defines during setup. It is frozen once setup returns.
-type Registry struct{}
+type Registry struct {
+	tools []tool
+}
 
 // Session identifies the user and conversation a request belongs to.
 type Session struct {
