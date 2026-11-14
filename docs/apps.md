@@ -15,7 +15,7 @@ func main() {
 }
 
 func setup(r *agentsmith.Registry) error {
-	r.Provider(&gemini.Provider{Model: "gemini-3.6-flash"})
+	r.Provider(&providers.Gemini{Model: "gemini-3.6-flash"})
 	r.SystemPrompt("You are a note-taking assistant.")
 	agentsmith.Collection[Note](r, "notes")
 	return nil

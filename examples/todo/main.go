@@ -10,8 +10,6 @@ import (
 
 	"github.com/north-shore-software/agent-smith/agentsmith"
 	"github.com/north-shore-software/agent-smith/providers"
-	"github.com/north-shore-software/agent-smith/providers/gemini"
-	"github.com/north-shore-software/agent-smith/providers/ollama"
 )
 
 //go:embed web
@@ -53,9 +51,9 @@ func setup(r *agentsmith.Registry) error {
 func provider() (providers.Provider, error) {
 	switch set := os.Getenv("AGENT_SMITH_MODEL_SET"); set {
 	case "", "local":
-		return &ollama.OllamaProvider{Model: "gemma4"}, nil
+		return &providers.Ollama{Model: "gemma4"}, nil
 	case "cloud":
-		return &gemini.Provider{Model: "gemini-3.6-flash"}, nil
+		return &providers.Gemini{Model: "gemini-3.6-flash"}, nil
 	default:
 		return nil, fmt.Errorf("unknown AGENT_SMITH_MODEL_SET %q (want local or cloud)", set)
 	}

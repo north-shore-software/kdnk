@@ -1,6 +1,4 @@
-// Package ollama implements providers.Provider for an Ollama server, with helpers to pull and
-// preload models.
-package ollama
+package providers
 
 import (
 	"bufio"
@@ -15,33 +13,34 @@ import (
 	"time"
 
 	"github.com/north-shore-software/agent-smith/internal/httpx"
-	"github.com/north-shore-software/agent-smith/providers"
 )
 
 const defaultModel = "gemma4"
 
-// Base is the Ollama server URL. It is read once, at package initialisation, from OLLAMA_HOST with
-// any trailing slash removed, and defaults to http://localhost:11434.
-var Base = func() string {
+// OllamaHost is the Ollama server URL. It is read once, at package initialisation, from
+// OLLAMA_HOST with any trailing slash removed, and defaults to http://localhost:11434.
+var OllamaHost = func() string {
 	if v := os.Getenv("OLLAMA_HOST"); v != "" {
 		return strings.TrimRight(v, "/")
 	}
 	return "http://localhost:11434"
 }()
 
-// OllamaProvider streams completions from the /api/chat endpoint of the Ollama server at Base.
-type OllamaProvider struct {
+// Ollama streams completions from the /api/chat endpoint of the Ollama server at OllamaHost.
+type Ollama struct {
 	// Model is the Ollama model name. If empty, gemma4 is used.
 	Model string
 }
 
 // ModelName returns p.Model, or gemma4 if p.Model is empty.
-func (p *OllamaProvider) ModelName() string {
+func (p *Ollama) ModelName() string {
 	if p.Model != "" {
 		return p.Model
 	}
 	return defaultModel
 }
+
+func (*Ollama) sealed() {}
 
 const keepAlive = "60m"
 
@@ -50,10 +49,10 @@ var (
 	ctxLenCache = make(map[string]int)
 )
 
-// GetModelContextLength returns the context length Ollama's /api/show reports for model, caching
+// OllamaContextLength returns the context length Ollama's /api/show reports for model, caching
 // it per model for the life of the process. It returns 4096 without caching if the request fails
 // or takes over 5 seconds, and caches 4096 if the response has no context length.
-func GetModelContextLength(ctx context.Context, model string) int {
+func OllamaContextLength(ctx context.Context, model string) int {
 	ctxLenMu.RLock()
 	val, ok := ctxLenCache[model]
 	ctxLenMu.RUnlock()
@@ -66,7 +65,7 @@ func GetModelContextLength(ctx context.Context, model string) int {
 	if err != nil {
 		return defaultLen
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, Base+"/api/show", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, OllamaHost+"/api/show", bytes.NewReader(body))
 	if err != nil {
 		return defaultLen
 	}
@@ -116,12 +115,12 @@ type ollamaTool struct {
 }
 
 type ollamaChatRequest struct {
-	Model     string              `json:"model"`
-	Messages  []providers.Message `json:"messages"`
-	Stream    bool                `json:"stream"`
-	KeepAlive string              `json:"keep_alive,omitempty"`
-	Options   map[string]any      `json:"options,omitempty"`
-	Tools     []ollamaTool        `json:"tools,omitempty"`
+	Model     string         `json:"model"`
+	Messages  []Message      `json:"messages"`
+	Stream    bool           `json:"stream"`
+	KeepAlive string         `json:"keep_alive,omitempty"`
+	Options   map[string]any `json:"options,omitempty"`
+	Tools     []ollamaTool   `json:"tools,omitempty"`
 }
 
 type ollamaToolCall struct {
@@ -156,12 +155,12 @@ func normalizeArguments(raw json.RawMessage) json.RawMessage {
 	return raw
 }
 
-// Stream implements providers.Provider. It requests the model's full context length, from
-// GetModelContextLength, and keeps the model loaded for 60 minutes. It returns an error only if
+// Stream implements Provider. It requests the model's full context length, from
+// OllamaContextLength, and keeps the model loaded for 60 minutes. It returns an error only if
 // the request cannot be sent: a non-200 response is not detected and yields an empty stream. Each
 // tool call is emitted as an EventToolStart followed by an EventToolEnd, with string-encoded
 // arguments decoded to raw JSON.
-func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Message, tools []providers.Tool) (*providers.Completion, error) {
+func (p *Ollama) Stream(ctx context.Context, messages []Message, tools []Tool) (*Completion, error) {
 	modelName := p.ModelName()
 
 	var oTools []ollamaTool
@@ -184,14 +183,14 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 		Messages:  messages,
 		Stream:    true,
 		KeepAlive: keepAlive,
-		Options:   map[string]any{"num_ctx": GetModelContextLength(ctx, modelName)},
+		Options:   map[string]any{"num_ctx": OllamaContextLength(ctx, modelName)},
 		Tools:     oTools,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("ollama: marshal: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, Base+"/api/chat", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, OllamaHost+"/api/chat", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("ollama: new request: %w", err)
 	}
@@ -202,9 +201,9 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 		return nil, fmt.Errorf("ollama: request: %w", err)
 	}
 
-	ch := make(chan providers.StreamEvent)
+	ch := make(chan StreamEvent)
 	done := make(chan struct{})
-	var finalUsage *providers.Usage
+	var finalUsage *Usage
 	go func() {
 		defer close(done)
 		defer close(ch)
@@ -221,7 +220,7 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 			}
 			if chunk.Message.Content != "" {
 				select {
-				case ch <- providers.StreamEvent{Kind: providers.EventText, Text: chunk.Message.Content}:
+				case ch <- StreamEvent{Kind: EventText, Text: chunk.Message.Content}:
 				case <-ctx.Done():
 					return
 				}
@@ -232,8 +231,8 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 					id := fmt.Sprintf("call-%d-%d", time.Now().UnixNano(), i)
 					activeCalls = append(activeCalls, id)
 					select {
-					case ch <- providers.StreamEvent{
-						Kind:       providers.EventToolStart,
+					case ch <- StreamEvent{
+						Kind:       EventToolStart,
 						ToolCallID: id,
 						ToolName:   tc.Function.Name,
 					}:
@@ -245,8 +244,8 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 					id := activeCalls[i]
 					normArgs := normalizeArguments(tc.Function.Arguments)
 					select {
-					case ch <- providers.StreamEvent{
-						Kind:       providers.EventToolEnd,
+					case ch <- StreamEvent{
+						Kind:       EventToolEnd,
 						ToolCallID: id,
 						ToolName:   tc.Function.Name,
 						Args:       normArgs,
@@ -264,7 +263,7 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 				if chunk.EvalDuration > 0 {
 					tps = float64(chunk.EvalCount) / (float64(chunk.EvalDuration) / float64(time.Second))
 				}
-				finalUsage = &providers.Usage{
+				finalUsage = &Usage{
 					Provider:         "ollama",
 					Model:            p.ModelName(),
 					PromptTokens:     chunk.PromptEvalCount,
@@ -277,9 +276,9 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 		}
 	}()
 
-	return &providers.Completion{
+	return &Completion{
 		Events: ch,
-		Wait:   func() *providers.Usage { <-done; return finalUsage },
+		Wait:   func() *Usage { <-done; return finalUsage },
 	}, nil
 }
 
@@ -291,21 +290,21 @@ type ollamaGenerateRequest struct {
 	Options   map[string]any `json:"options,omitempty"`
 }
 
-// PreloadModel loads model into the Ollama server's memory, with the same context length and
+// PreloadOllamaModel loads model into the Ollama server's memory, with the same context length and
 // 60-minute keep-alive as Stream. It times out after 5 minutes and returns an error on a non-200
 // status.
-func PreloadModel(ctx context.Context, model string) error {
+func PreloadOllamaModel(ctx context.Context, model string) error {
 	body, err := json.Marshal(ollamaGenerateRequest{
 		Model:     model,
 		Prompt:    "",
 		Stream:    false,
 		KeepAlive: keepAlive,
-		Options:   map[string]any{"num_ctx": GetModelContextLength(ctx, model)},
+		Options:   map[string]any{"num_ctx": OllamaContextLength(ctx, model)},
 	})
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, Base+"/api/generate", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, OllamaHost+"/api/generate", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -334,15 +333,15 @@ type ollamaPullChunk struct {
 	Error     string `json:"error"`
 }
 
-// PullModel downloads model to the Ollama server, calling onProgress, if non-nil, for each
+// PullOllamaModel downloads model to the Ollama server, calling onProgress, if non-nil, for each
 // progress update. It returns an error on a non-200 status or if Ollama reports one during the
 // pull.
-func PullModel(ctx context.Context, model string, onProgress func(status string, completed, total int64)) error {
+func PullOllamaModel(ctx context.Context, model string, onProgress func(status string, completed, total int64)) error {
 	body, err := json.Marshal(ollamaPullRequest{Name: model, Stream: true})
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, Base+"/api/pull", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, OllamaHost+"/api/pull", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

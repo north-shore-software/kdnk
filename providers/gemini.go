@@ -1,5 +1,4 @@
-// Package gemini implements providers.Provider for Google's Gemini API.
-package gemini
+package providers
 
 import (
 	"bufio"
@@ -14,22 +13,23 @@ import (
 	"time"
 
 	"github.com/north-shore-software/agent-smith/internal/httpx"
-	"github.com/north-shore-software/agent-smith/providers"
 )
 
 const geminiBase = "https://generativelanguage.googleapis.com/v1beta"
 
-// Provider streams completions from the Gemini streamGenerateContent endpoint. It reads the API
+// Gemini streams completions from the Gemini streamGenerateContent endpoint. It reads the API
 // key from GEMINI_API_KEY on every call.
-type Provider struct {
+type Gemini struct {
 	// Model is the Gemini model name, such as "gemini-3.6-flash". It is required.
 	Model string
 }
 
 // ModelName returns p.Model.
-func (p *Provider) ModelName() string {
+func (p *Gemini) ModelName() string {
 	return p.Model
 }
+
+func (*Gemini) sealed() {}
 
 type geminiContent struct {
 	Role  string       `json:"role,omitempty"`
@@ -75,12 +75,12 @@ type geminiStreamChunk struct {
 	} `json:"usageMetadata"`
 }
 
-// Stream implements providers.Provider. System messages are joined into the system instruction, and
+// Stream implements Provider. System messages are joined into the system instruction, and
 // the "assistant" role is sent as Gemini's "model" role. It returns an error if GEMINI_API_KEY or
 // Model is empty, or if the request fails or returns a non-2xx status. Each tool call is emitted
 // as an EventToolStart followed by an EventToolEnd with the full arguments. A second call to the
 // same tool in one response is dropped. Usage has no TokensPerSecond.
-func (p *Provider) Stream(ctx context.Context, messages []providers.Message, tools []providers.Tool) (*providers.Completion, error) {
+func (p *Gemini) Stream(ctx context.Context, messages []Message, tools []Tool) (*Completion, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("gemini: GEMINI_API_KEY not set")
@@ -156,15 +156,15 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 		return nil, fmt.Errorf("gemini: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
-	ch := make(chan providers.StreamEvent)
+	ch := make(chan StreamEvent)
 	done := make(chan struct{})
-	var finalUsage *providers.Usage
+	var finalUsage *Usage
 	go func() {
 		defer close(done)
 		defer close(ch)
 		defer resp.Body.Close()
 
-		usage := providers.Usage{Provider: "gemini", Model: p.ModelName()}
+		usage := Usage{Provider: "gemini", Model: p.ModelName()}
 		var sawUsage bool
 
 		activeCalls := make(map[string]string)
@@ -198,7 +198,7 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 			for _, part := range chunk.Candidates[0].Content.Parts {
 				if part.Text != "" {
 					select {
-					case ch <- providers.StreamEvent{Kind: providers.EventText, Text: part.Text}:
+					case ch <- StreamEvent{Kind: EventText, Text: part.Text}:
 					case <-ctx.Done():
 						return
 					}
@@ -210,8 +210,8 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 						id = fmt.Sprintf("call-%d", time.Now().UnixNano())
 						activeCalls[name] = id
 						select {
-						case ch <- providers.StreamEvent{
-							Kind:       providers.EventToolStart,
+						case ch <- StreamEvent{
+							Kind:       EventToolStart,
 							ToolCallID: id,
 							ToolName:   name,
 						}:
@@ -221,8 +221,8 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 					}
 					if !completedCalls[name] && len(part.FunctionCall.Args) > 0 {
 						select {
-						case ch <- providers.StreamEvent{
-							Kind:       providers.EventToolEnd,
+						case ch <- StreamEvent{
+							Kind:       EventToolEnd,
 							ToolCallID: id,
 							ToolName:   name,
 							Args:       part.FunctionCall.Args,
@@ -240,8 +240,8 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 		}
 	}()
 
-	return &providers.Completion{
+	return &Completion{
 		Events: ch,
-		Wait:   func() *providers.Usage { <-done; return finalUsage },
+		Wait:   func() *Usage { <-done; return finalUsage },
 	}, nil
 }

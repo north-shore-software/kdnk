@@ -35,7 +35,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/north-shore-software/agent-smith/agentsmith"
-	"github.com/north-shore-software/agent-smith/providers/gemini"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 type Note struct {
@@ -49,7 +49,7 @@ func main() {
 }
 
 func setup(r *agentsmith.Registry) error {
-	r.Provider(&gemini.Provider{Model: "gemini-3.6-flash"})
+	r.Provider(&providers.Gemini{Model: "gemini-3.6-flash"})
 	r.SystemPrompt("You are a note-taking assistant. Use get_time when the user asks about the time.")
 	agentsmith.Collection[Note](r, "notes")
 	agentsmith.Tool(r, "get_time", "Get the current date and time on the server", getTime)
@@ -63,7 +63,7 @@ func getTime(ctx context.Context, app core.App, s agentsmith.Session, _ struct{}
 
 - `Run` calls `setup`, then starts the command line: `serve` runs the server and `chat` talks
   to it.
-- `Provider` sets the model that answers chat requests. `gemini.Provider` reads `GEMINI_API_KEY`.
+- `Provider` sets the model that answers chat requests. `providers.Gemini` reads `GEMINI_API_KEY`.
 - `SystemPrompt` is sent to the model at the start of every chat request.
 - `Collection` declares a collection of `Note` records named `notes`. agent-smith creates the
   table, and gives the model tools to manage it: `notes_create`, `notes_list`, `notes_get`,
@@ -125,5 +125,5 @@ An OpenAI-compatible endpoint, so that tools such as [`llm`](https://llm.dataset
 ## Next steps
 
 - [Building an app](/apps/) covers collections, sessions and tools in depth.
-- [LLM providers](/providers/) covers Ollama and custom providers.
+- [LLM providers](/providers/) covers Gemini and Ollama.
 - [Example: todo](/examples/todo/) is a complete app with a web UI.
