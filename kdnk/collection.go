@@ -1,4 +1,4 @@
-package agentsmith
+package kdnk
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 )
 
 // ErrNotFound is returned when a record does not exist or belongs to another user.
-var ErrNotFound = errors.New("agentsmith: not found")
+var ErrNotFound = errors.New("kdnk: not found")
 
-var errUnbound = errors.New("agentsmith: collection used before Run started the app")
+var errUnbound = errors.New("kdnk: collection used before Run started the app")
 
 // CollectionOption restricts which generated tools a collection gets.
 type CollectionOption interface {
@@ -113,7 +113,7 @@ func Collection[T any](r *Registry, name string, opts ...CollectionOption) *Stor
 	}
 	fields, err := structFields(reflect.TypeFor[T](), reservedFields)
 	if err != nil {
-		r.errs = append(r.errs, fmt.Errorf("agentsmith: collection %q: %w", name, err))
+		r.errs = append(r.errs, fmt.Errorf("kdnk: collection %q: %w", name, err))
 	}
 	c.fields = fields
 	r.collections = append(r.collections, c)
@@ -303,7 +303,7 @@ func (c *Store[T]) Create(ctx context.Context, s Session, v T) (Record[T], error
 // not positive, or if called before Run has started the app.
 func (c *Store[T]) List(ctx context.Context, s Session, limit int) ([]Record[T], error) {
 	if limit <= 0 {
-		return nil, errors.New("agentsmith: limit must be positive")
+		return nil, errors.New("kdnk: limit must be positive")
 	}
 	col, err := c.collection()
 	if err != nil {

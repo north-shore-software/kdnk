@@ -2,7 +2,7 @@
 title: Quickstart
 ---
 
-This walkthrough builds a small agent-smith app: a chat assistant that can save notes, list them,
+This walkthrough builds a small kdnk app: a chat assistant that can save notes, list them,
 and tell the time. You will run it locally and talk to it from the terminal.
 
 ## Requirements
@@ -15,12 +15,12 @@ and tell the time. You will run it locally and talk to it from the terminal.
 ```sh
 mkdir notes && cd notes
 go mod init notes
-go get github.com/north-shore-software/agent-smith
+go get github.com/north-shore-software/kdnk
 ```
 
 ## Write the app
 
-An agent-smith app is a **setup function**. At startup, agent-smith calls it once with a registry,
+A kdnk app is a **setup function**. At startup, kdnk calls it once with a registry,
 and the function registers what the app needs: a model provider, a system prompt, collections and
 tools. Registration closes when the function returns. Create `main.go`:
 
@@ -34,8 +34,8 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/agentsmith"
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/kdnk"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 type Note struct {
@@ -43,20 +43,20 @@ type Note struct {
 }
 
 func main() {
-	if err := agentsmith.Run(setup); err != nil {
+	if err := kdnk.Run(setup); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func setup(r *agentsmith.Registry) error {
+func setup(r *kdnk.Registry) error {
 	r.Provider(&providers.Gemini{Model: "gemini-3.6-flash"})
 	r.SystemPrompt("You are a note-taking assistant. Use get_time when the user asks about the time.")
-	agentsmith.Collection[Note](r, "notes")
-	agentsmith.Tool(r, "get_time", "Get the current date and time on the server", getTime)
+	kdnk.Collection[Note](r, "notes")
+	kdnk.Tool(r, "get_time", "Get the current date and time on the server", getTime)
 	return nil
 }
 
-func getTime(ctx context.Context, app core.App, s agentsmith.Session, _ struct{}) (any, error) {
+func getTime(ctx context.Context, app core.App, s kdnk.Session, _ struct{}) (any, error) {
 	return time.Now().Format(time.RFC1123), nil
 }
 ```
@@ -65,14 +65,14 @@ func getTime(ctx context.Context, app core.App, s agentsmith.Session, _ struct{}
   to it.
 - `Provider` sets the model that answers chat requests. `providers.Gemini` reads `GEMINI_API_KEY`.
 - `SystemPrompt` is sent to the model at the start of every chat request.
-- `Collection` declares a collection of `Note` records named `notes`. agent-smith creates the
+- `Collection` declares a collection of `Note` records named `notes`. kdnk creates the
   table, and gives the model tools to manage it: `notes_create`, `notes_list`, `notes_get`,
   `notes_update` and `notes_delete`. Their arguments come from the fields of `Note`.
   `notes_list` returns up to a limit the model chooses. Each record belongs to the user who
   created it, and a user only ever sees their own.
 - `Tool` registers a tool you write yourself, for anything that isn't a collection operation. The
   model is shown its name, its description, and a JSON Schema generated from the handler's
-  argument type; `get_time` takes none (`struct{}`). When the model calls it, agent-smith decodes
+  argument type; `get_time` takes none (`struct{}`). When the model calls it, kdnk decodes
   the arguments into that type, runs the handler, and passes the result back to the model as JSON.
 
 A collection can be restricted to append-only, where the model can add records but not change or
@@ -119,7 +119,7 @@ frontend built with the AI SDK's `useChat` can talk to the same server.
 
 :::note
 An OpenAI-compatible endpoint, so that tools such as [`llm`](https://llm.datasette.io/) and
-`aichat` can talk to an agent-smith server, is planned but not built yet.
+`aichat` can talk to a kdnk server, is planned but not built yet.
 :::
 
 ## Next steps

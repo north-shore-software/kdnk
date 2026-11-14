@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/north-shore-software/agent-smith/agentsmith"
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/kdnk"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 //go:embed web
@@ -25,12 +25,12 @@ type Job struct {
 }
 
 func main() {
-	if err := agentsmith.Run(setup); err != nil {
+	if err := kdnk.Run(setup); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func setup(r *agentsmith.Registry) error {
+func setup(r *kdnk.Registry) error {
 	p, err := provider()
 	if err != nil {
 		return err
@@ -49,17 +49,17 @@ func setup(r *agentsmith.Registry) error {
 		"After a tool returns, tell the user what happened in plain language.",
 	}, " "))
 	r.Web(web)
-	agentsmith.Collection[Job](r, "jobs")
+	kdnk.Collection[Job](r, "jobs")
 	return nil
 }
 
 func provider() (providers.Provider, error) {
-	switch set := os.Getenv("AGENT_SMITH_MODEL_SET"); set {
+	switch set := os.Getenv("KDNK_MODEL_SET"); set {
 	case "", "local":
 		return &providers.Ollama{Model: "gemma4"}, nil
 	case "cloud":
 		return &providers.Gemini{Model: "gemini-3.6-flash"}, nil
 	default:
-		return nil, fmt.Errorf("unknown AGENT_SMITH_MODEL_SET %q (want local or cloud)", set)
+		return nil, fmt.Errorf("unknown KDNK_MODEL_SET %q (want local or cloud)", set)
 	}
 }

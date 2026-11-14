@@ -21,10 +21,10 @@ type GameState struct {
 	Status  string `json:"status"`
 }
 
-g := &game{states: agentsmith.Collection[GameState](r, "game_state", agentsmith.Hidden)}
+g := &game{states: kdnk.Collection[GameState](r, "game_state", kdnk.Hidden)}
 r.SystemPromptFunc(g.systemPrompt)
-agentsmith.Tool(r, "ship_feature", "Ship a feature to users. …", g.shipFeature)
-agentsmith.Tool(r, "tune_model", "Spend a week on evals and prompts instead of shipping. …", g.tuneModel)
+kdnk.Tool(r, "ship_feature", "Ship a feature to users. …", g.shipFeature)
+kdnk.Tool(r, "tune_model", "Spend a week on evals and prompts instead of shipping. …", g.tuneModel)
 ```
 
 - **`Hidden`** means the model gets no tools for `game_state`. It can't edit the score.
@@ -53,8 +53,8 @@ with a terminal-style theme.
 From the repository root:
 
 ```sh
-./smith.sh setup
-./smith.sh run rpg
+./kdnk.sh setup
+./kdnk.sh run rpg
 ```
 
-Open the page and send `let's start`. `./smith.sh clear rpg` deletes the game.
+Open the page and send `let's start`. `./kdnk.sh clear rpg` deletes the game.

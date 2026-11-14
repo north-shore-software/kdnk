@@ -5,9 +5,9 @@ A task management assistant that helps users record and list tasks prioritized b
 
 ## What It Demonstrates
 - **Static System Prompt**: Sets a fixed system prompt with `Registry.SystemPrompt`.
-- **Generated Collection Tools**: `agentsmith.Collection[Todo]` creates the `todos` collection and gives the model `todos_create`, `todos_list`, `todos_get`, `todos_update` and `todos_delete`, with arguments taken from the fields of `Todo`.
+- **Generated Collection Tools**: `kdnk.Collection[Todo]` creates the `todos` collection and gives the model `todos_create`, `todos_list`, `todos_get`, `todos_update` and `todos_delete`, with arguments taken from the fields of `Todo`.
 - **User-Scoped Data**: Each todo belongs to the user who created it, across all conversations, and a user only sees their own.
-- **Model Selection**: `AGENT_SMITH_MODEL_SET` picks the provider: `local` (the default) uses `gemma4` on Ollama, `cloud` uses `gemini-3.6-flash` on Gemini.
+- **Model Selection**: `KDNK_MODEL_SET` picks the provider: `local` (the default) uses `gemma4` on Ollama, `cloud` uses `gemini-3.6-flash` on Gemini.
 - **Web UI**: Serves the embedded `web/` directory with `Registry.Web`.
 - **Guest Auth**: The page signs itself in on load against `POST /api/guest`, which mints a `users` record with a server-generated `guestId` and a separate random password. `guestId` is a unique identity field on the `users` collection, so no fake email address is involved. The credentials live in `localStorage`; `POST /api/guest/upgrade` converts the same record into an email account, keeping its id and therefore its todos and history.
 

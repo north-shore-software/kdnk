@@ -10,7 +10,7 @@
 > Interfaces, schemas, and endpoints change without notice, and there is no migration path
 > between versions. Not ready for production use.
 
-# Agent Smith
+# kdnk
 
 A lightweight all-in-one backend for stateful, deterministic apps whose main interface is an LLM
 chat. It handles chat persistence, authentication, and guest sessions — and provides a
@@ -36,9 +36,9 @@ Requires Go 1.24.1 or newer, and either a [Gemini API key](https://aistudio.goog
 local [Ollama](https://ollama.com/).
 
 ```sh
-./smith.sh setup   # specify API keys, or a local model
-./smith.sh run     # build and serve one of the example projects
-./smith.sh clear   # clear an example's local data
+./kdnk.sh setup   # specify API keys, or a local model
+./kdnk.sh run     # build and serve one of the example projects
+./kdnk.sh clear   # clear an example's local data
 ```
 
 ## License

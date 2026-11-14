@@ -1,4 +1,4 @@
-module github.com/north-shore-software/agent-smith
+module github.com/north-shore-software/kdnk
 
 go 1.24.1
 

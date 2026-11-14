@@ -63,7 +63,7 @@ describe() {
 	case "$1" in
 		todo) printf 'a task list. Static system prompt; tools that write and read a growing collection.' ;;
 		rpg)  printf 'a short game about building an AI app. Per-conversation state, injected into the prompt every turn.' ;;
-		*)    printf 'an agent-smith example.' ;;
+		*)    printf 'a kdnk example.' ;;
 	esac
 }
 
@@ -339,21 +339,21 @@ cmd_run() {
 	PORT="$(config_value PORT)"
 
 	# A truncated or hand-edited config otherwise surfaces as an empty
-	# AGENT_SMITH_MODEL_SET and a confusing failure at the first message.
+	# KDNK_MODEL_SET and a confusing failure at the first message.
 	case "$MODEL_SET" in
 		cloud)
-			[ -n "$GEMINI_API_KEY_VALUE" ] || die "config has MODEL_SET=cloud but no API key. Re-run: ./smith.sh setup"
+			[ -n "$GEMINI_API_KEY_VALUE" ] || die "config has MODEL_SET=cloud but no API key. Re-run: ./kdnk.sh setup"
 			;;
 		local)
-			[ -n "$OLLAMA_HOST_VALUE" ] || die "config has MODEL_SET=local but no Ollama host. Re-run: ./smith.sh setup"
+			[ -n "$OLLAMA_HOST_VALUE" ] || die "config has MODEL_SET=local but no Ollama host. Re-run: ./kdnk.sh setup"
 			;;
 		*)
-			die "config has an unusable MODEL_SET ('$MODEL_SET'). Re-run: ./smith.sh setup"
+			die "config has an unusable MODEL_SET ('$MODEL_SET'). Re-run: ./kdnk.sh setup"
 			;;
 	esac
 
 	if ! [ "$PORT" -eq "$PORT" ] 2>/dev/null || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
-		die "config has an unusable PORT ('$PORT'). Re-run: ./smith.sh setup"
+		die "config has an unusable PORT ('$PORT'). Re-run: ./kdnk.sh setup"
 	fi
 
 	local example_arg="${1:-}"
@@ -388,7 +388,7 @@ having no effect."
 
 	mkdir -p "$REPO_ROOT/examples/$EXAMPLE/pb_data"
 
-	export AGENT_SMITH_MODEL_SET="$MODEL_SET"
+	export KDNK_MODEL_SET="$MODEL_SET"
 	if [ "$MODEL_SET" = "cloud" ]; then
 		export GEMINI_API_KEY="$GEMINI_API_KEY_VALUE"
 	else
@@ -439,7 +439,7 @@ cmd_docs() {
 usage() {
 	local names
 	names="$(list_examples | paste -sd, - | sed 's/,/, /g')"
-	say "Usage: ./smith.sh <command> [example]"
+	say "Usage: ./kdnk.sh <command> [example]"
 	say ""
 	say "Commands:"
 	say "  setup            Configure model set, API key, Ollama host, and port"

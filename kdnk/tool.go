@@ -1,4 +1,4 @@
-package agentsmith
+package kdnk
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 // Tool adds a custom tool named name, described to the model by description, to r. When the model
@@ -26,7 +26,7 @@ import (
 func Tool[In any](r *Registry, name, description string, handler func(ctx context.Context, app core.App, s Session, in In) (any, error)) {
 	fields, err := structFields(reflect.TypeFor[In](), nil)
 	if err != nil {
-		r.errs = append(r.errs, fmt.Errorf("agentsmith: tool %q: %w", name, err))
+		r.errs = append(r.errs, fmt.Errorf("kdnk: tool %q: %w", name, err))
 	}
 	props, _ := fieldProperties(fields)
 	var required []string

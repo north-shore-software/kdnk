@@ -7,7 +7,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/agentsmith"
+	"github.com/north-shore-software/kdnk/kdnk"
 )
 
 const (
@@ -35,10 +35,10 @@ type ShipFeatureInput struct {
 }
 
 type game struct {
-	states *agentsmith.Store[GameState]
+	states *kdnk.Store[GameState]
 }
 
-func (g *game) systemPrompt(ctx context.Context, app core.App, s agentsmith.Session) (string, error) {
+func (g *game) systemPrompt(ctx context.Context, app core.App, s kdnk.Session) (string, error) {
 	rec, err := g.load(ctx, s)
 	if err != nil {
 		return "", err
@@ -66,7 +66,7 @@ Use ship_feature when the player ships something to users, and tune_model when t
 	), nil
 }
 
-func (g *game) shipFeature(ctx context.Context, app core.App, s agentsmith.Session, in ShipFeatureInput) (any, error) {
+func (g *game) shipFeature(ctx context.Context, app core.App, s kdnk.Session, in ShipFeatureInput) (any, error) {
 	if in.Feature == "" {
 		return nil, fmt.Errorf("feature is required")
 	}
@@ -78,11 +78,11 @@ func (g *game) shipFeature(ctx context.Context, app core.App, s agentsmith.Sessi
 	})
 }
 
-func (g *game) tuneModel(ctx context.Context, app core.App, s agentsmith.Session, _ struct{}) (any, error) {
+func (g *game) tuneModel(ctx context.Context, app core.App, s kdnk.Session, _ struct{}) (any, error) {
 	return g.act(ctx, s, tune)
 }
 
-func (g *game) act(ctx context.Context, s agentsmith.Session, action func(*GameState) map[string]any) (any, error) {
+func (g *game) act(ctx context.Context, s kdnk.Session, action func(*GameState) map[string]any) (any, error) {
 	rec, err := g.load(ctx, s)
 	if err != nil {
 		return nil, err
@@ -165,10 +165,10 @@ func settle(state *GameState) {
 	}
 }
 
-func (g *game) load(ctx context.Context, s agentsmith.Session) (agentsmith.Record[GameState], error) {
+func (g *game) load(ctx context.Context, s kdnk.Session) (kdnk.Record[GameState], error) {
 	recs, err := g.states.List(ctx, s, 1)
 	if err != nil {
-		return agentsmith.Record[GameState]{}, err
+		return kdnk.Record[GameState]{}, err
 	}
 	if len(recs) > 0 {
 		return recs[0], nil

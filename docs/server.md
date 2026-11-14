@@ -4,7 +4,7 @@ title: Server configuration
 
 ## Running the server
 
-`agentsmith.Run` runs the PocketBase command line. Start the server with `serve`:
+`kdnk.Run` runs the PocketBase command line. Start the server with `serve`:
 
 ```sh
 ./myapp serve --http=127.0.0.1:8090 --dir ./pb_data
@@ -13,7 +13,7 @@ title: Server configuration
 `--dir` is where the SQLite database lives, `pb_data` next to the binary by default. On first
 start, PocketBase prints a link for creating a superuser for the admin dashboard at `/_/`.
 
-The `migrate` command is available too. Agent Smith's own tables are created by a migration that
+The `migrate` command is available too. kdnk's own tables are created by a migration that
 runs automatically. Your collections' tables are not migrations: they are created or extended
 each time the server starts serving, as described in
 [Building an app](/apps/#collections).
@@ -101,7 +101,7 @@ in `fsys` get `index.html`, so a single-page app's own routes work. The examples
 //go:embed web
 var webAssets embed.FS
 
-func setup(r *agentsmith.Registry) error {
+func setup(r *kdnk.Registry) error {
 	web, err := fs.Sub(webAssets, "web")
 	if err != nil {
 		return err
