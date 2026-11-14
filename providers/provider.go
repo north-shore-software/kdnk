@@ -91,6 +91,8 @@ type Completion struct {
 
 // Provider streams model responses.
 type Provider interface {
+	// ModelName returns the name of the model the provider sends requests to.
+	ModelName() string
 	// Stream sends messages and the available tools to the model and returns the response stream.
 	// An error means the stream could not be started.
 	Stream(ctx context.Context, messages []Message, tools []Tool) (*Completion, error)

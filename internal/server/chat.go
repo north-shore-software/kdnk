@@ -6,7 +6,6 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 
 	"github.com/north-shore-software/agent-smith/internal/chat"
-	"github.com/north-shore-software/agent-smith/internal/llm"
 	"github.com/north-shore-software/agent-smith/internal/plugin"
 	"github.com/north-shore-software/agent-smith/providers"
 )
@@ -18,7 +17,7 @@ type chatRequest struct {
 	Messages []chat.Message `json:"messages"`
 }
 
-func handleChat(app core.App, p plugin.Plugin) func(e *core.RequestEvent) error {
+func handleChat(app core.App, p plugin.Plugin, provider providers.Provider) func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
 		req := chatRequest{}
 		if err := e.BindBody(&req); err != nil {
@@ -37,10 +36,7 @@ func handleChat(app core.App, p plugin.Plugin) func(e *core.RequestEvent) error 
 		ctx := e.Request.Context()
 		sess := plugin.Session{ConversationID: req.ID, UserID: e.Auth.Id}
 
-		model, err := llm.ResolveRole(llm.RoleChat)
-		if err != nil {
-			return e.InternalServerError("no chat model configured", err)
-		}
+		model := provider.ModelName()
 
 		conv, err := chat.FindOrCreateConversation(ctx, app, sess.UserID, sess.ConversationID)
 		if err != nil {
@@ -74,7 +70,6 @@ func handleChat(app core.App, p plugin.Plugin) func(e *core.RequestEvent) error 
 			return e.BadRequestError("messages required", nil)
 		}
 
-		provider := llm.SelectedProvider(model)
 		tools := p.Tools()
 
 		comp, err := provider.Stream(ctx, msgs, tools)

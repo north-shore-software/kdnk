@@ -26,7 +26,8 @@ type Provider struct {
 	Model string
 }
 
-func (p *Provider) model() string {
+// ModelName returns p.Model.
+func (p *Provider) ModelName() string {
 	return p.Model
 }
 
@@ -136,7 +137,7 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 		return nil, fmt.Errorf("gemini: marshal: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/models/%s:streamGenerateContent?alt=sse", geminiBase, p.model())
+	url := fmt.Sprintf("%s/models/%s:streamGenerateContent?alt=sse", geminiBase, p.ModelName())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("gemini: new request: %w", err)
@@ -163,7 +164,7 @@ func (p *Provider) Stream(ctx context.Context, messages []providers.Message, too
 		defer close(ch)
 		defer resp.Body.Close()
 
-		usage := providers.Usage{Provider: "gemini", Model: p.model()}
+		usage := providers.Usage{Provider: "gemini", Model: p.ModelName()}
 		var sawUsage bool
 
 		activeCalls := make(map[string]string)

@@ -10,15 +10,17 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
-	"github.com/north-shore-software/agent-smith/internal/llm"
 	_ "github.com/north-shore-software/agent-smith/internal/migrations"
 	"github.com/north-shore-software/agent-smith/internal/plugin"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 // Config configures New.
 type Config struct {
 	// Plugin is the application to serve. It is required.
 	Plugin plugin.Plugin
+	// Provider answers every chat request. It is required.
+	Provider providers.Provider
 	// Web, if non-nil, is served for GET requests no other route matches, falling back to
 	// index.html for paths it does not contain.
 	Web fs.FS
@@ -60,7 +62,7 @@ func New(cfg Config) *pocketbase.PocketBase {
 
 		se.Router.POST("/api/guest", handleGuestCreate(app))
 		se.Router.POST("/api/guest/upgrade", handleGuestUpgrade(app)).Bind(apis.RequireAuth("users"))
-		se.Router.POST("/api/chat", handleChat(app, cfg.Plugin)).Bind(apis.RequireAuth("users"))
+		se.Router.POST("/api/chat", handleChat(app, cfg.Plugin, cfg.Provider)).Bind(apis.RequireAuth("users"))
 
 		if cfg.Web != nil {
 			se.Router.GET("/{path...}", apis.Static(cfg.Web, true))
@@ -100,12 +102,4 @@ func ensureCollections(app core.App, p plugin.Plugin) error {
 		app.Logger().Info("created plugin collection", "plugin", p.Name(), "collection", col.Name)
 	}
 	return nil
-}
-
-// EnsureReady exits the process with log.Fatal if no provider factory has been registered with
-// llm.SetProviderFactory.
-func EnsureReady() {
-	if !llm.Ready() {
-		log.Fatal("server.EnsureReady: no LLM provider registered; call llm.SetProviderFactory before EnsureReady")
-	}
 }

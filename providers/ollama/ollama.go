@@ -35,7 +35,8 @@ type OllamaProvider struct {
 	Model string
 }
 
-func (p *OllamaProvider) model() string {
+// ModelName returns p.Model, or gemma4 if p.Model is empty.
+func (p *OllamaProvider) ModelName() string {
 	if p.Model != "" {
 		return p.Model
 	}
@@ -161,7 +162,7 @@ func normalizeArguments(raw json.RawMessage) json.RawMessage {
 // tool call is emitted as an EventToolStart followed by an EventToolEnd, with string-encoded
 // arguments decoded to raw JSON.
 func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Message, tools []providers.Tool) (*providers.Completion, error) {
-	modelName := p.model()
+	modelName := p.ModelName()
 
 	var oTools []ollamaTool
 	if len(tools) > 0 {
@@ -265,7 +266,7 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Messag
 				}
 				finalUsage = &providers.Usage{
 					Provider:         "ollama",
-					Model:            p.model(),
+					Model:            p.ModelName(),
 					PromptTokens:     chunk.PromptEvalCount,
 					CompletionTokens: chunk.EvalCount,
 					TotalTokens:      chunk.PromptEvalCount + chunk.EvalCount,
