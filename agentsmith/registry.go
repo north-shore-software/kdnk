@@ -28,6 +28,8 @@ type Registry struct {
 	providerCalls int
 	web           fs.FS
 	webCalls      int
+	prompt        string
+	promptCalls   int
 }
 
 // Session identifies the user and conversation a request belongs to.
@@ -53,16 +55,23 @@ func (r *Registry) Web(fsys fs.FS) {
 	r.webCalls++
 }
 
+// SystemPrompt sets the system prompt sent to the model at the start of every chat request. An
+// empty prompt sends no system message. Calling it more than once makes Run return an error.
+func (r *Registry) SystemPrompt(prompt string) {
+	r.prompt = prompt
+	r.promptCalls++
+}
+
 // Run calls setup with a new Registry, then runs the PocketBase command line (serve, migrate and
 // so on) for an app built from what setup registered. It returns setup's error; an error if
-// Provider was not called, was called with nil, or was called more than once, if Web was called
-// more than once, if a collection's type is invalid, if two collections or two tools share a name,
-// or if a collection is named users, chat_conversation or chat_message, or starts with an
-// underscore; or the command line's error.
+// Provider was not called, was called with nil, or was called more than once, if Web or
+// SystemPrompt was called more than once, if a collection's type is invalid, if two collections or
+// two tools share a name, or if a collection is named users, chat_conversation or chat_message, or
+// starts with an underscore; or the command line's error.
 //
 // Collection tables are created or extended when the server starts serving, and the tools of
-// every collection and every Tool are offered to the model. The system prompt is empty. The files
-// passed to Web, if any, are served as the web UI.
+// every collection and every Tool are offered to the model, along with the prompt passed to
+// SystemPrompt, if any. The files passed to Web, if any, are served as the web UI.
 func Run(setup func(*Registry) error) error {
 	r := &Registry{}
 	if err := setup(r); err != nil {
@@ -88,6 +97,9 @@ func (r *Registry) validate() error {
 	}
 	if r.webCalls > 1 {
 		errs = append(errs, errors.New("agentsmith: Web called more than once"))
+	}
+	if r.promptCalls > 1 {
+		errs = append(errs, errors.New("agentsmith: SystemPrompt called more than once"))
 	}
 	reserved := []string{"users", chat.CollectionConversation, chat.CollectionMessage}
 	seen := map[string]bool{}
@@ -131,8 +143,8 @@ func (p registryPlugin) Collections() []*core.Collection {
 	return cols
 }
 
-func (registryPlugin) SystemPrompt(context.Context, core.App, plugin.Session) (string, error) {
-	return "", nil
+func (p registryPlugin) SystemPrompt(context.Context, core.App, plugin.Session) (string, error) {
+	return p.r.prompt, nil
 }
 
 func (p registryPlugin) Tools() []providers.Tool {
