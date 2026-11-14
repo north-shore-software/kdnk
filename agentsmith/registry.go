@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"strings"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -25,6 +26,8 @@ type Registry struct {
 	errs          []error
 	provider      providers.Provider
 	providerCalls int
+	web           fs.FS
+	webCalls      int
 }
 
 // Session identifies the user and conversation a request belongs to.
@@ -42,16 +45,24 @@ func (r *Registry) Provider(p providers.Provider) {
 	r.providerCalls++
 }
 
+// Web sets the files served for GET requests that no other route matches, falling back to
+// index.html for paths fsys does not contain. A nil fsys serves no web UI. Calling it more than
+// once makes Run return an error.
+func (r *Registry) Web(fsys fs.FS) {
+	r.web = fsys
+	r.webCalls++
+}
+
 // Run calls setup with a new Registry, then runs the PocketBase command line (serve, migrate and
 // so on) for an app built from what setup registered. It returns setup's error; an error if
-// Provider was not called, was called with nil, or was called more than once, if a collection's
-// type is invalid, if two collections or two tools share a name, or if a collection is named
-// users, chat_conversation or chat_message, or starts with an underscore; or the command line's
-// error.
+// Provider was not called, was called with nil, or was called more than once, if Web was called
+// more than once, if a collection's type is invalid, if two collections or two tools share a name,
+// or if a collection is named users, chat_conversation or chat_message, or starts with an
+// underscore; or the command line's error.
 //
 // Collection tables are created or extended when the server starts serving, and the tools of
-// every collection and every Tool are offered to the model. The system prompt is empty, and no
-// web UI is served.
+// every collection and every Tool are offered to the model. The system prompt is empty. The files
+// passed to Web, if any, are served as the web UI.
 func Run(setup func(*Registry) error) error {
 	r := &Registry{}
 	if err := setup(r); err != nil {
@@ -60,7 +71,7 @@ func Run(setup func(*Registry) error) error {
 	if err := r.validate(); err != nil {
 		return err
 	}
-	app := server.New(server.Config{Plugin: registryPlugin{r}, Provider: r.provider})
+	app := server.New(server.Config{Plugin: registryPlugin{r}, Provider: r.provider, Web: r.web})
 	for _, c := range r.collections {
 		c.bind(app)
 	}
@@ -74,6 +85,9 @@ func (r *Registry) validate() error {
 	}
 	if r.provider == nil {
 		errs = append(errs, errors.New("agentsmith: no provider registered"))
+	}
+	if r.webCalls > 1 {
+		errs = append(errs, errors.New("agentsmith: Web called more than once"))
 	}
 	reserved := []string{"users", chat.CollectionConversation, chat.CollectionMessage}
 	seen := map[string]bool{}
