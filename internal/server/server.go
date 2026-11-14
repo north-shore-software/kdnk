@@ -2,6 +2,7 @@
 package server
 
 import (
+	"fmt"
 	"io/fs"
 	"log"
 
@@ -31,8 +32,8 @@ type Config struct {
 // New returns a PocketBase app that serves cfg.Plugin. It exits the process with log.Fatal if
 // cfg.Plugin is nil.
 //
-// When the app starts serving, it creates any of the plugin's collections that do not exist,
-// enables a default set of rate limits if rate limiting is off, schedules a daily 03:00 job that
+// When the app starts serving, it creates or extends the plugin's collections as described on
+// plugin.Plugin.Collections, enables a default set of rate limits if rate limiting is off, schedules a daily 03:00 job that
 // deletes guest users created over 30 days ago with no message in the last 30 days, and registers
 // these routes:
 //
@@ -92,14 +93,47 @@ func ensureRateLimits(app core.App) error {
 }
 
 func ensureCollections(app core.App, p plugin.Plugin) error {
-	for _, col := range p.Collections() {
-		if _, err := app.FindCollectionByNameOrId(col.Name); err == nil {
+	for _, want := range p.Collections() {
+		for _, f := range want.Fields {
+			rel, ok := f.(*core.RelationField)
+			if !ok {
+				continue
+			}
+			target, err := app.FindCollectionByNameOrId(rel.CollectionId)
+			if err != nil {
+				return fmt.Errorf("collection %q: relation field %q: %w", want.Name, rel.Name, err)
+			}
+			rel.CollectionId = target.Id
+		}
+
+		have, err := app.FindCollectionByNameOrId(want.Name)
+		if err != nil {
+			if err := app.Save(want); err != nil {
+				return err
+			}
+			app.Logger().Info("created plugin collection", "plugin", p.Name(), "collection", want.Name)
 			continue
 		}
-		if err := app.Save(col); err != nil {
+
+		var added []string
+		for _, f := range want.Fields {
+			existing := have.Fields.GetByName(f.GetName())
+			if existing == nil {
+				have.Fields.Add(f)
+				added = append(added, f.GetName())
+				continue
+			}
+			if existing.Type() != f.Type() {
+				return fmt.Errorf("collection %q: field %q is %s in the database but %s in code", want.Name, f.GetName(), existing.Type(), f.Type())
+			}
+		}
+		if len(added) == 0 {
+			continue
+		}
+		if err := app.Save(have); err != nil {
 			return err
 		}
-		app.Logger().Info("created plugin collection", "plugin", p.Name(), "collection", col.Name)
+		app.Logger().Info("added plugin collection fields", "plugin", p.Name(), "collection", want.Name, "fields", added)
 	}
 	return nil
 }

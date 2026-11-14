@@ -24,8 +24,10 @@ type Plugin interface {
 	// Name identifies the plugin in server logs.
 	Name() string
 	// Collections returns the PocketBase collections the plugin needs. When the server starts
-	// serving, each one whose name does not exist yet is created. Existing collections are left
-	// unchanged.
+	// serving, each one whose name does not exist yet is created. For one that exists, fields it
+	// lacks are added; existing fields are never changed or removed, and a field whose type differs
+	// from the existing one makes serving fail. A relation field's CollectionId may be the target
+	// collection's name.
 	Collections() []*core.Collection
 	// SystemPrompt returns the system prompt for a chat request. It is called once per request,
 	// before the first model call. An empty string sends no system message. An error fails the
