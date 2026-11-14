@@ -1,6 +1,7 @@
-<p align="center">
-  <img src="docs/agent-smith.jpg" alt="Agent Smith" width="480">
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/kdnk-banner-dark.svg">
+  <img alt="kdnk: Describe the app. kdnk does the plumbing." src="brand/kdnk-banner-light.svg">
+</picture>
 
 <p align="center"><strong>You hear that, Mr. Anderson? That is the sound of inevitability!</strong></p>
 
