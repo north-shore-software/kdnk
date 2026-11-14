@@ -10,9 +10,9 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
-	"github.com/north-shore-software/agent-smith/llm"
-	_ "github.com/north-shore-software/agent-smith/migrations"
-	"github.com/north-shore-software/agent-smith/plugin"
+	"github.com/north-shore-software/agent-smith/internal/llm"
+	_ "github.com/north-shore-software/agent-smith/internal/migrations"
+	"github.com/north-shore-software/agent-smith/internal/plugin"
 )
 
 // Config configures New.

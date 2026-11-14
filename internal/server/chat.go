@@ -5,9 +5,10 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/chat"
-	"github.com/north-shore-software/agent-smith/llm"
-	"github.com/north-shore-software/agent-smith/plugin"
+	"github.com/north-shore-software/agent-smith/internal/chat"
+	"github.com/north-shore-software/agent-smith/internal/llm"
+	"github.com/north-shore-software/agent-smith/internal/plugin"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 const maxToolSteps = 4
@@ -60,13 +61,13 @@ func handleChat(app core.App, p plugin.Plugin) func(e *core.RequestEvent) error 
 			seq++
 		}
 
-		var msgs []llm.Message
+		var msgs []providers.Message
 		sysPrompt, err := p.SystemPrompt(ctx, app, sess)
 		if err != nil {
 			return e.InternalServerError("system prompt failed", err)
 		}
 		if sysPrompt != "" {
-			msgs = append(msgs, llm.Message{Role: "system", Content: sysPrompt})
+			msgs = append(msgs, providers.Message{Role: "system", Content: sysPrompt})
 		}
 		msgs = append(msgs, chat.Hydrate(append(dbMsgs, newMsgs...))...)
 		if len(msgs) == 0 {
@@ -109,7 +110,7 @@ func handleChat(app core.App, p plugin.Plugin) func(e *core.RequestEvent) error 
 			}
 
 			if t.text != "" {
-				msgs = append(msgs, llm.Message{Role: "assistant", Content: t.text})
+				msgs = append(msgs, providers.Message{Role: "assistant", Content: t.text})
 			}
 
 			for _, tc := range t.toolCalls {
@@ -122,7 +123,7 @@ func handleChat(app core.App, p plugin.Plugin) func(e *core.RequestEvent) error 
 				if part, err := chat.ToolPart(tc, out); err == nil {
 					stored.Parts = append(stored.Parts, part)
 				}
-				msgs = append(msgs, llm.Message{
+				msgs = append(msgs, providers.Message{
 					Role:    "user",
 					Content: chat.ToolResultText(tc.Name, out),
 				})

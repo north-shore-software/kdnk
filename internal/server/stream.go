@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/north-shore-software/agent-smith/llm"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 type streamWriter struct {
@@ -125,28 +125,28 @@ func (s *streamWriter) finish() {
 
 type turn struct {
 	text      string
-	toolCalls []llm.ToolCall
+	toolCalls []providers.ToolCall
 }
 
-func (s *streamWriter) drain(comp *llm.Completion, textID string) turn {
+func (s *streamWriter) drain(comp *providers.Completion, textID string) turn {
 	var out turn
 	var textStarted bool
 
 	for ev := range comp.Events {
 		switch ev.Kind {
-		case llm.EventText:
+		case providers.EventText:
 			if !textStarted {
 				s.textStart(textID)
 				textStarted = true
 			}
 			out.text += ev.Text
 			s.textDelta(textID, ev.Text)
-		case llm.EventToolStart:
+		case providers.EventToolStart:
 			s.toolInputStart(ev.ToolCallID, ev.ToolName)
-		case llm.EventToolArgDelta:
+		case providers.EventToolArgDelta:
 			s.toolInputDelta(ev.ToolCallID, ev.Text)
-		case llm.EventToolEnd:
-			out.toolCalls = append(out.toolCalls, llm.ToolCall{
+		case providers.EventToolEnd:
+			out.toolCalls = append(out.toolCalls, providers.ToolCall{
 				ID:   ev.ToolCallID,
 				Name: ev.ToolName,
 				Args: ev.Args,

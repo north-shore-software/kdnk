@@ -1,5 +1,5 @@
-// Package ollama implements llm.Provider for an Ollama server, with helpers to pull and preload
-// models.
+// Package ollama implements providers.Provider for an Ollama server, with helpers to pull and
+// preload models.
 package ollama
 
 import (
@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/north-shore-software/agent-smith/httpx"
-	"github.com/north-shore-software/agent-smith/llm"
+	"github.com/north-shore-software/agent-smith/internal/httpx"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 const defaultModel = "gemma4"
@@ -115,12 +115,12 @@ type ollamaTool struct {
 }
 
 type ollamaChatRequest struct {
-	Model     string         `json:"model"`
-	Messages  []llm.Message  `json:"messages"`
-	Stream    bool           `json:"stream"`
-	KeepAlive string         `json:"keep_alive,omitempty"`
-	Options   map[string]any `json:"options,omitempty"`
-	Tools     []ollamaTool   `json:"tools,omitempty"`
+	Model     string              `json:"model"`
+	Messages  []providers.Message `json:"messages"`
+	Stream    bool                `json:"stream"`
+	KeepAlive string              `json:"keep_alive,omitempty"`
+	Options   map[string]any      `json:"options,omitempty"`
+	Tools     []ollamaTool        `json:"tools,omitempty"`
 }
 
 type ollamaToolCall struct {
@@ -155,12 +155,12 @@ func normalizeArguments(raw json.RawMessage) json.RawMessage {
 	return raw
 }
 
-// Stream implements llm.Provider. It requests the model's full context length, from
+// Stream implements providers.Provider. It requests the model's full context length, from
 // GetModelContextLength, and keeps the model loaded for 60 minutes. It returns an error only if
 // the request cannot be sent: a non-200 response is not detected and yields an empty stream. Each
 // tool call is emitted as an EventToolStart followed by an EventToolEnd, with string-encoded
 // arguments decoded to raw JSON.
-func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Completion, error) {
+func (p *OllamaProvider) Stream(ctx context.Context, messages []providers.Message, tools []providers.Tool) (*providers.Completion, error) {
 	modelName := p.model()
 
 	var oTools []ollamaTool
@@ -201,9 +201,9 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, too
 		return nil, fmt.Errorf("ollama: request: %w", err)
 	}
 
-	ch := make(chan llm.StreamEvent)
+	ch := make(chan providers.StreamEvent)
 	done := make(chan struct{})
-	var finalUsage *llm.Usage
+	var finalUsage *providers.Usage
 	go func() {
 		defer close(done)
 		defer close(ch)
@@ -220,7 +220,7 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, too
 			}
 			if chunk.Message.Content != "" {
 				select {
-				case ch <- llm.StreamEvent{Kind: llm.EventText, Text: chunk.Message.Content}:
+				case ch <- providers.StreamEvent{Kind: providers.EventText, Text: chunk.Message.Content}:
 				case <-ctx.Done():
 					return
 				}
@@ -231,8 +231,8 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, too
 					id := fmt.Sprintf("call-%d-%d", time.Now().UnixNano(), i)
 					activeCalls = append(activeCalls, id)
 					select {
-					case ch <- llm.StreamEvent{
-						Kind:       llm.EventToolStart,
+					case ch <- providers.StreamEvent{
+						Kind:       providers.EventToolStart,
 						ToolCallID: id,
 						ToolName:   tc.Function.Name,
 					}:
@@ -244,8 +244,8 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, too
 					id := activeCalls[i]
 					normArgs := normalizeArguments(tc.Function.Arguments)
 					select {
-					case ch <- llm.StreamEvent{
-						Kind:       llm.EventToolEnd,
+					case ch <- providers.StreamEvent{
+						Kind:       providers.EventToolEnd,
 						ToolCallID: id,
 						ToolName:   tc.Function.Name,
 						Args:       normArgs,
@@ -263,7 +263,7 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, too
 				if chunk.EvalDuration > 0 {
 					tps = float64(chunk.EvalCount) / (float64(chunk.EvalDuration) / float64(time.Second))
 				}
-				finalUsage = &llm.Usage{
+				finalUsage = &providers.Usage{
 					Provider:         "ollama",
 					Model:            p.model(),
 					PromptTokens:     chunk.PromptEvalCount,
@@ -276,9 +276,9 @@ func (p *OllamaProvider) Stream(ctx context.Context, messages []llm.Message, too
 		}
 	}()
 
-	return &llm.Completion{
+	return &providers.Completion{
 		Events: ch,
-		Wait:   func() *llm.Usage { <-done; return finalUsage },
+		Wait:   func() *providers.Usage { <-done; return finalUsage },
 	}, nil
 }
 

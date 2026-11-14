@@ -8,7 +8,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/llm"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 // Session identifies the conversation and user a Plugin call is made for.
@@ -32,7 +32,7 @@ type Plugin interface {
 	// request.
 	SystemPrompt(ctx context.Context, app core.App, s Session) (string, error)
 	// Tools returns the tools offered to the model. It is called once per chat request.
-	Tools() []llm.Tool
+	Tools() []providers.Tool
 	// ExecuteTool runs the tool called name with the model's JSON arguments, and returns its
 	// output, which is sent to the client and back to the model. If it returns an error,
 	// {"error":"<message>"} is sent instead.

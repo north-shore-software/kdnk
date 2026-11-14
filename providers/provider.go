@@ -1,6 +1,6 @@
-// Package llm defines the provider-neutral types for streaming chat completions with tool calls,
-// and the process-wide registry that maps model sets and roles to models and providers.
-package llm
+// Package providers defines the provider-neutral types for streaming chat completions with tool
+// calls.
+package providers
 
 import (
 	"context"
@@ -63,14 +63,6 @@ type StreamEvent struct {
 	// Args is the complete JSON arguments of the tool call.
 	Args json.RawMessage
 }
-
-// Role names the job a model is used for. The active ModelSet maps each Role to a model.
-type Role string
-
-const (
-	// RoleChat is the model used to answer chat requests.
-	RoleChat Role = "chat"
-)
 
 // Usage reports token counts for a completed stream.
 type Usage struct {

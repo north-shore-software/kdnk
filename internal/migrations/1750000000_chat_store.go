@@ -5,7 +5,7 @@ import (
 	m "github.com/pocketbase/pocketbase/migrations"
 	"github.com/pocketbase/pocketbase/tools/types"
 
-	"github.com/north-shore-software/agent-smith/chat"
+	"github.com/north-shore-software/agent-smith/internal/chat"
 )
 
 const (

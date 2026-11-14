@@ -1,4 +1,4 @@
-// Package gemini implements llm.Provider for Google's Gemini API.
+// Package gemini implements providers.Provider for Google's Gemini API.
 package gemini
 
 import (
@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/north-shore-software/agent-smith/httpx"
-	"github.com/north-shore-software/agent-smith/llm"
+	"github.com/north-shore-software/agent-smith/internal/httpx"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 const geminiBase = "https://generativelanguage.googleapis.com/v1beta"
@@ -74,12 +74,12 @@ type geminiStreamChunk struct {
 	} `json:"usageMetadata"`
 }
 
-// Stream implements llm.Provider. System messages are joined into the system instruction, and the
-// "assistant" role is sent as Gemini's "model" role. It returns an error if GEMINI_API_KEY or
+// Stream implements providers.Provider. System messages are joined into the system instruction, and
+// the "assistant" role is sent as Gemini's "model" role. It returns an error if GEMINI_API_KEY or
 // Model is empty, or if the request fails or returns a non-2xx status. Each tool call is emitted
 // as an EventToolStart followed by an EventToolEnd with the full arguments. A second call to the
 // same tool in one response is dropped. Usage has no TokensPerSecond.
-func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []llm.Tool) (*llm.Completion, error) {
+func (p *Provider) Stream(ctx context.Context, messages []providers.Message, tools []providers.Tool) (*providers.Completion, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("gemini: GEMINI_API_KEY not set")
@@ -155,15 +155,15 @@ func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []l
 		return nil, fmt.Errorf("gemini: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
-	ch := make(chan llm.StreamEvent)
+	ch := make(chan providers.StreamEvent)
 	done := make(chan struct{})
-	var finalUsage *llm.Usage
+	var finalUsage *providers.Usage
 	go func() {
 		defer close(done)
 		defer close(ch)
 		defer resp.Body.Close()
 
-		usage := llm.Usage{Provider: "gemini", Model: p.model()}
+		usage := providers.Usage{Provider: "gemini", Model: p.model()}
 		var sawUsage bool
 
 		activeCalls := make(map[string]string)
@@ -197,7 +197,7 @@ func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []l
 			for _, part := range chunk.Candidates[0].Content.Parts {
 				if part.Text != "" {
 					select {
-					case ch <- llm.StreamEvent{Kind: llm.EventText, Text: part.Text}:
+					case ch <- providers.StreamEvent{Kind: providers.EventText, Text: part.Text}:
 					case <-ctx.Done():
 						return
 					}
@@ -209,8 +209,8 @@ func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []l
 						id = fmt.Sprintf("call-%d", time.Now().UnixNano())
 						activeCalls[name] = id
 						select {
-						case ch <- llm.StreamEvent{
-							Kind:       llm.EventToolStart,
+						case ch <- providers.StreamEvent{
+							Kind:       providers.EventToolStart,
 							ToolCallID: id,
 							ToolName:   name,
 						}:
@@ -220,8 +220,8 @@ func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []l
 					}
 					if !completedCalls[name] && len(part.FunctionCall.Args) > 0 {
 						select {
-						case ch <- llm.StreamEvent{
-							Kind:       llm.EventToolEnd,
+						case ch <- providers.StreamEvent{
+							Kind:       providers.EventToolEnd,
 							ToolCallID: id,
 							ToolName:   name,
 							Args:       part.FunctionCall.Args,
@@ -239,8 +239,8 @@ func (p *Provider) Stream(ctx context.Context, messages []llm.Message, tools []l
 		}
 	}()
 
-	return &llm.Completion{
+	return &providers.Completion{
 		Events: ch,
-		Wait:   func() *llm.Usage { <-done; return finalUsage },
+		Wait:   func() *providers.Usage { <-done; return finalUsage },
 	}, nil
 }

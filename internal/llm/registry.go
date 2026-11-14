@@ -1,6 +1,15 @@
+// Package llm is the process-wide registry that maps model sets and roles to models and providers.
 package llm
 
 import "fmt"
+
+// Role names the job a model is used for. The active ModelSet maps each Role to a model.
+type Role string
+
+const (
+	// RoleChat is the model used to answer chat requests.
+	RoleChat Role = "chat"
+)
 
 // ModelSet names a fixed group of models, one per Role.
 type ModelSet string

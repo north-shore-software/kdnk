@@ -6,11 +6,11 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/llm"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 type tool struct {
-	def llm.Tool
+	def providers.Tool
 	run func(ctx context.Context, app core.App, s Session, args json.RawMessage) (any, error)
 }
 
@@ -26,7 +26,7 @@ func (c *Store[T]) tools() []tool {
 
 func (c *Store[T]) createTool() tool {
 	return tool{
-		def: llm.Tool{Name: c.name + "_create", Description: "Create a record in " + c.name + "."},
+		def: providers.Tool{Name: c.name + "_create", Description: "Create a record in " + c.name + "."},
 		run: func(ctx context.Context, app core.App, s Session, args json.RawMessage) (any, error) {
 			return nil, errNotImplemented
 		},
@@ -35,7 +35,7 @@ func (c *Store[T]) createTool() tool {
 
 func (c *Store[T]) listTool() tool {
 	return tool{
-		def: llm.Tool{Name: c.name + "_list", Description: "List records in " + c.name + ", newest first."},
+		def: providers.Tool{Name: c.name + "_list", Description: "List records in " + c.name + ", newest first."},
 		run: func(ctx context.Context, app core.App, s Session, args json.RawMessage) (any, error) {
 			return nil, errNotImplemented
 		},
@@ -44,7 +44,7 @@ func (c *Store[T]) listTool() tool {
 
 func (c *Store[T]) getTool() tool {
 	return tool{
-		def: llm.Tool{Name: c.name + "_get", Description: "Get a record in " + c.name + " by ID."},
+		def: providers.Tool{Name: c.name + "_get", Description: "Get a record in " + c.name + " by ID."},
 		run: func(ctx context.Context, app core.App, s Session, args json.RawMessage) (any, error) {
 			return nil, errNotImplemented
 		},
@@ -53,7 +53,7 @@ func (c *Store[T]) getTool() tool {
 
 func (c *Store[T]) updateTool() tool {
 	return tool{
-		def: llm.Tool{Name: c.name + "_update", Description: "Update a record in " + c.name + " by ID."},
+		def: providers.Tool{Name: c.name + "_update", Description: "Update a record in " + c.name + " by ID."},
 		run: func(ctx context.Context, app core.App, s Session, args json.RawMessage) (any, error) {
 			return nil, errNotImplemented
 		},
@@ -62,7 +62,7 @@ func (c *Store[T]) updateTool() tool {
 
 func (c *Store[T]) deleteTool() tool {
 	return tool{
-		def: llm.Tool{Name: c.name + "_delete", Description: "Delete a record in " + c.name + " by ID."},
+		def: providers.Tool{Name: c.name + "_delete", Description: "Delete a record in " + c.name + " by ID."},
 		run: func(ctx context.Context, app core.App, s Session, args json.RawMessage) (any, error) {
 			return nil, errNotImplemented
 		},

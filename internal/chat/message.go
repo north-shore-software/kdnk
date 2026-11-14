@@ -1,4 +1,5 @@
-// Package chat stores conversations and messages in PocketBase and converts them to llm messages.
+// Package chat stores conversations and messages in PocketBase and converts them to provider
+// messages.
 package chat
 
 import (
@@ -6,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/north-shore-software/agent-smith/llm"
+	"github.com/north-shore-software/agent-smith/providers"
 )
 
 const (
@@ -56,7 +57,7 @@ func TextPart(text string) MessagePart {
 
 // ToolPart returns a tool MessagePart for call and its output. It returns an error only if the
 // data cannot be marshalled.
-func ToolPart(call llm.ToolCall, output string) (MessagePart, error) {
+func ToolPart(call providers.ToolCall, output string) (MessagePart, error) {
 	b, err := json.Marshal(ToolPartData{
 		ToolCallID: call.ID,
 		ToolName:   call.Name,
@@ -92,15 +93,15 @@ func ExtractNewMessages(dbMsgs, incoming []Message) []Message {
 	return newMsgs
 }
 
-// Hydrate converts stored messages to llm messages. The text parts of each message are
-// concatenated into one llm.Message with the same role, omitted if empty. Each tool part becomes a
-// separate llm.Message with role "user" and ToolResultText content, placed after the text. Tool
-// parts whose Data does not decode are skipped.
-func Hydrate(msgs []Message) []llm.Message {
-	var out []llm.Message
+// Hydrate converts stored messages to provider messages. The text parts of each message are
+// concatenated into one providers.Message with the same role, omitted if empty. Each tool part
+// becomes a separate providers.Message with role "user" and ToolResultText content, placed after
+// the text. Tool parts whose Data does not decode are skipped.
+func Hydrate(msgs []Message) []providers.Message {
+	var out []providers.Message
 	for _, m := range msgs {
 		var text string
-		var results []llm.Message
+		var results []providers.Message
 
 		for _, p := range m.Parts {
 			switch {
@@ -111,7 +112,7 @@ func Hydrate(msgs []Message) []llm.Message {
 				if err := json.Unmarshal(p.Data, &d); err != nil {
 					continue
 				}
-				results = append(results, llm.Message{
+				results = append(results, providers.Message{
 					Role:    "user",
 					Content: ToolResultText(d.ToolName, d.Output),
 				})
@@ -119,7 +120,7 @@ func Hydrate(msgs []Message) []llm.Message {
 		}
 
 		if text != "" {
-			out = append(out, llm.Message{Role: m.Role, Content: text})
+			out = append(out, providers.Message{Role: m.Role, Content: text})
 		}
 		out = append(out, results...)
 	}
