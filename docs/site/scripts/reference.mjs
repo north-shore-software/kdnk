@@ -7,8 +7,6 @@ const gomarkdoc = 'github.com/princjef/gomarkdoc/cmd/gomarkdoc@v1.1.0';
 const packages = {
   agentsmith: 'agentsmith',
   providers: 'providers',
-  gemini: 'providers/gemini',
-  ollama: 'providers/ollama',
 };
 
 const root = fileURLToPath(new URL('../../..', import.meta.url));
