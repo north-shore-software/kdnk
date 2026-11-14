@@ -422,6 +422,20 @@ cmd_clear() {
 	fi
 }
 
+cmd_docs() {
+	local site_dir="$REPO_ROOT/docs/site"
+	command -v pnpm >/dev/null 2>&1 || die "pnpm is not on PATH. Install it from https://pnpm.io/installation"
+
+	cd "$site_dir"
+	if [ ! -d "$site_dir/node_modules" ]; then
+		step "Installing docs dependencies"
+		run_cmd pnpm install || die "pnpm install failed."
+	fi
+
+	step "Starting docs server"
+	exec pnpm dev
+}
+
 usage() {
 	local names
 	names="$(list_examples | paste -sd, - | sed 's/,/, /g')"
@@ -431,6 +445,7 @@ usage() {
 	say "  setup            Configure model set, API key, Ollama host, and port"
 	say "  run [example]    Build and run an example${names:+ ($names)}"
 	say "  clear [example]  Delete an example's local data"
+	say "  docs             Run the docs site dev server"
 	say ""
 	say "Omit [example] to pick one from a menu."
 	say ""
@@ -446,6 +461,7 @@ case "$subcmd" in
 	setup) cmd_setup ;;
 	run) cmd_run "${1:-}" ;;
 	clear) cmd_clear "${1:-}" ;;
+	docs) cmd_docs ;;
 	-h|--help|help) usage 0 ;;
 	*) warn "unknown command '$subcmd'."; usage ;;
 esac
