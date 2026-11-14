@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/north-shore-software/agent-smith/internal/httpx"
+	"github.com/north-shore-software/kdnk/internal/httpx"
 )
 
 const defaultModel = "gemma4"

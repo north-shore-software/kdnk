@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const gomarkdoc = 'github.com/princjef/gomarkdoc/cmd/gomarkdoc@v1.1.0';
 const packages = {
-  agentsmith: 'agentsmith',
+  kdnk: 'kdnk',
   providers: 'providers',
 };
 

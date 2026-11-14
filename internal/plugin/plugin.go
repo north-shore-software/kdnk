@@ -8,7 +8,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 // Session identifies the conversation and user a Plugin call is made for.
@@ -19,7 +19,7 @@ type Session struct {
 	UserID string
 }
 
-// Plugin is an application built on agent-smith. server.New serves exactly one.
+// Plugin is an application built on kdnk. server.New serves exactly one.
 type Plugin interface {
 	// Name identifies the plugin in server logs.
 	Name() string

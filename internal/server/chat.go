@@ -5,9 +5,9 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/internal/chat"
-	"github.com/north-shore-software/agent-smith/internal/plugin"
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/internal/chat"
+	"github.com/north-shore-software/kdnk/internal/plugin"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 const maxToolSteps = 4

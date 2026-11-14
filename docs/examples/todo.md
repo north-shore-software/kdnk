@@ -18,12 +18,12 @@ type Todo struct {
 	ExpectedValue float64 `json:"expected_value" jsonschema:"1-10, how much it is worth"`
 }
 
-func setup(r *agentsmith.Registry) error {
+func setup(r *kdnk.Registry) error {
 	// provider() and web are set up above; see main.go
 	r.Provider(p)
 	r.SystemPrompt("You help the user prioritise tasks by expected value and urgency, …")
 	r.Web(web)
-	agentsmith.Collection[Todo](r, "todos")
+	kdnk.Collection[Todo](r, "todos")
 	return nil
 }
 ```
@@ -55,9 +55,9 @@ Clearing `localStorage` abandons the guest account.
 From the repository root:
 
 ```sh
-./smith.sh setup      # pick Gemini (needs a key) or Ollama, and a port
-./smith.sh run todo
+./kdnk.sh setup      # pick Gemini (needs a key) or Ollama, and a port
+./kdnk.sh run todo
 ```
 
 Then open `http://127.0.0.1:8090/` (or the port you chose) and try
-`add: file taxes, urgency 8, value 9`. `./smith.sh clear todo` deletes the example's data.
+`add: file taxes, urgency 8, value 9`. `./kdnk.sh clear todo` deletes the example's data.

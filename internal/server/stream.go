@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 type streamWriter struct {

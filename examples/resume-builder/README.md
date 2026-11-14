@@ -5,9 +5,9 @@ An assistant that helps users build the work-experience section of their resume,
 
 ## What It Demonstrates
 - **Static System Prompt**: Sets a fixed system prompt with `Registry.SystemPrompt`.
-- **Generated Collection Tools**: `agentsmith.Collection[Job]` creates the `jobs` collection and gives the model `jobs_create`, `jobs_list`, `jobs_get`, `jobs_update` and `jobs_delete`, with arguments taken from the fields of `Job`.
+- **Generated Collection Tools**: `kdnk.Collection[Job]` creates the `jobs` collection and gives the model `jobs_create`, `jobs_list`, `jobs_get`, `jobs_update` and `jobs_delete`, with arguments taken from the fields of `Job`.
 - **User-Scoped Data**: Each job belongs to the user who created it, across all conversations, and a user only sees their own.
-- **Model Selection**: `AGENT_SMITH_MODEL_SET` picks the provider: `local` (the default) uses `gemma4` on Ollama, `cloud` uses `gemini-3.6-flash` on Gemini.
+- **Model Selection**: `KDNK_MODEL_SET` picks the provider: `local` (the default) uses `gemma4` on Ollama, `cloud` uses `gemini-3.6-flash` on Gemini.
 - **Web UI**: Serves the embedded `web/` directory with `Registry.Web`.
 - **Guest Auth**: The page signs itself in on load against `POST /api/guest`, which mints a `users` record with a server-generated `guestId` and a separate random password. The credentials live in `localStorage`; `POST /api/guest/upgrade` converts the same record into an email account, keeping its id and therefore its jobs and history.
 

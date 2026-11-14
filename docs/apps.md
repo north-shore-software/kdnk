@@ -4,20 +4,20 @@ title: Building an app
 
 ## The setup function
 
-An app is a function that takes an `*agentsmith.Registry`. Pass it to `agentsmith.Run` from
+An app is a function that takes an `*kdnk.Registry`. Pass it to `kdnk.Run` from
 `main`:
 
 ```go
 func main() {
-	if err := agentsmith.Run(setup); err != nil {
+	if err := kdnk.Run(setup); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func setup(r *agentsmith.Registry) error {
+func setup(r *kdnk.Registry) error {
 	r.Provider(&providers.Gemini{Model: "gemini-3.6-flash"})
 	r.SystemPrompt("You are a note-taking assistant.")
-	agentsmith.Collection[Note](r, "notes")
+	kdnk.Collection[Note](r, "notes")
 	return nil
 }
 ```
@@ -38,7 +38,7 @@ Every problem found is reported in the one error.
 
 ## Sessions
 
-Tool handlers and the system prompt function receive an `agentsmith.Session`:
+Tool handlers and the system prompt function receive an `kdnk.Session`:
 
 - `UserID` is the ID of the signed-in user's record in the `users` collection.
 - `ConversationID` is the conversation ID the client sent with the chat request.
@@ -48,8 +48,8 @@ in a collection is shared by all of a user's conversations.
 
 ## Collections
 
-`agentsmith.Collection[T](r, name, opts...)` declares a collection whose fields come from the
-struct `T`, and returns a `*agentsmith.Store[T]` for using it from Go.
+`kdnk.Collection[T](r, name, opts...)` declares a collection whose fields come from the
+struct `T`, and returns a `*kdnk.Store[T]` for using it from Go.
 
 ```go
 type Todo struct {
@@ -57,7 +57,7 @@ type Todo struct {
 	Urgency float64 `json:"urgency" jsonschema:"1-10, how soon it must happen"`
 }
 
-todos := agentsmith.Collection[Todo](r, "todos")
+todos := kdnk.Collection[Todo](r, "todos")
 ```
 
 **Fields.** Each exported field becomes a column, named by its `json` tag, or by the Go field name
@@ -103,9 +103,9 @@ Restrictions apply to the model only; Go code can always use every method of the
 | Option | Tools |
 |---|---|
 | none | create, list, get, update, delete |
-| `agentsmith.AppendOnly` | create, list, get |
-| `agentsmith.ReadOnly` | list, get |
-| `agentsmith.Hidden` | none |
+| `kdnk.AppendOnly` | create, list, get |
+| `kdnk.ReadOnly` | list, get |
+| `kdnk.Hidden` | none |
 
 **Using a collection from Go.** The `Store[T]` methods are scoped to a session's user, and work
 once `Run` has started the app. Calling them earlier returns an error.
@@ -116,7 +116,7 @@ once `Run` has started the app. Calling them earlier returns an error.
 - `Update(ctx, s, id, v)` replaces a record's fields and returns it.
 - `Delete(ctx, s, id)` removes a record.
 
-`Get`, `Update` and `Delete` return `agentsmith.ErrNotFound` if the record doesn't exist or
+`Get`, `Update` and `Delete` return `kdnk.ErrNotFound` if the record doesn't exist or
 belongs to another user. Each `Record[T]` has `ID`, `Created` and `Data`.
 
 ## System prompt
@@ -127,7 +127,7 @@ belongs to another user. Each `Record[T]` has `ID`, `Created` and `Data`.
 Use it when the prompt depends on stored state:
 
 ```go
-r.SystemPromptFunc(func(ctx context.Context, app core.App, s agentsmith.Session) (string, error) {
+r.SystemPromptFunc(func(ctx context.Context, app core.App, s kdnk.Session) (string, error) {
 	rec, err := states.Get(ctx, s, id)
 	if err != nil {
 		return "", err
@@ -141,7 +141,7 @@ An empty prompt sends no system message. An error from the function fails the re
 
 ## Tools
 
-`agentsmith.Tool(r, name, description, handler)` registers a tool you write yourself:
+`kdnk.Tool(r, name, description, handler)` registers a tool you write yourself:
 
 ```go
 type ShipInput struct {
@@ -149,8 +149,8 @@ type ShipInput struct {
 	Audience float64 `json:"audience" jsonschema:"How many users it is aimed at, in thousands"`
 }
 
-agentsmith.Tool(r, "ship_feature", "Ship a feature to users.",
-	func(ctx context.Context, app core.App, s agentsmith.Session, in ShipInput) (any, error) {
+kdnk.Tool(r, "ship_feature", "Ship a feature to users.",
+	func(ctx context.Context, app core.App, s kdnk.Session, in ShipInput) (any, error) {
 		return map[string]any{"result": "shipped " + in.Feature}, nil
 	})
 ```

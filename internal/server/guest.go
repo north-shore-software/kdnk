@@ -8,7 +8,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/security"
 
-	"github.com/north-shore-software/agent-smith/internal/chat"
+	"github.com/north-shore-software/kdnk/internal/chat"
 )
 
 const (

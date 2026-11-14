@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/north-shore-software/agent-smith/internal/httpx"
+	"github.com/north-shore-software/kdnk/internal/httpx"
 )
 
 const geminiBase = "https://generativelanguage.googleapis.com/v1beta"

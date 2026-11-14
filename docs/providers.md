@@ -6,15 +6,15 @@ title: LLM providers
 
 An app has exactly one provider, set in `setup` with `r.Provider`. It answers every chat request
 from every user. It is either `providers.Gemini` or `providers.Ollama`, from
-`github.com/north-shore-software/agent-smith/providers`:
+`github.com/north-shore-software/kdnk/providers`:
 
 ```go
 r.Provider(&providers.Gemini{Model: "gemini-3.6-flash"})
 ```
 
-Choosing between providers is up to your app. The examples read `AGENT_SMITH_MODEL_SET`: `local`,
+Choosing between providers is up to your app. The examples read `KDNK_MODEL_SET`: `local`,
 the default, uses `gemma4` on Ollama, and `cloud` uses `gemini-3.6-flash` on Gemini.
-`./smith.sh setup` writes that choice to `examples/config.env`, and `./smith.sh run` sets the
+`./kdnk.sh setup` writes that choice to `examples/config.env`, and `./kdnk.sh run` sets the
 variable.
 
 ## Gemini

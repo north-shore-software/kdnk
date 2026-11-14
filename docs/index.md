@@ -1,12 +1,12 @@
 ---
-title: Agent Smith
+title: kdnk
 ---
 
 ## What it is
 
-Agent Smith is a Go library for apps whose main interface is a chat with an LLM. You write a setup
-function that registers a model provider, a system prompt, collections of records and tools. Agent
-Smith turns that into a single server binary that handles:
+kdnk is a Go library for apps whose main interface is a chat with an LLM. You write a setup
+function that registers a model provider, a system prompt, collections of records and tools.
+kdnk turns that into a single server binary that handles:
 
 - user accounts, including guest users who can later add an email and password
 - conversation history, stored per user
@@ -20,7 +20,7 @@ database, admin dashboard and command line.
 
 ## How it fits together
 
-- **Your app** calls `agentsmith.Run(setup)` from `main`. `setup` gets an `*agentsmith.Registry`
+- **Your app** calls `kdnk.Run(setup)` from `main`. `setup` gets an `*kdnk.Registry`
   and registers what the app needs. See [Building an app](/apps/).
 - **The registry** is checked when `setup` returns. Mistakes such as two tools with the same name
   make `Run` return an error before anything starts.
@@ -36,4 +36,4 @@ database, admin dashboard and command line.
 
 - [Quickstart](/quickstart/) walks through a small app.
 - The [examples](/examples/todo/) are complete apps with a web UI. Run them from the repository
-  root with `./smith.sh setup`, then `./smith.sh run`.
+  root with `./kdnk.sh setup`, then `./kdnk.sh run`.

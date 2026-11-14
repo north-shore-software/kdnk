@@ -22,7 +22,7 @@ type Job struct {
 	Summary  string `json:"summary" jsonschema:"What the user did and achieved there, as short bullet points"`
 }
 
-agentsmith.Collection[Job](r, "jobs")
+kdnk.Collection[Job](r, "jobs")
 ```
 
 The model gets `jobs_create`, `jobs_list`, `jobs_get`, `jobs_update` and `jobs_delete`. Jobs
@@ -45,8 +45,8 @@ Limits:
 From the repository root:
 
 ```sh
-./smith.sh setup
-./smith.sh run resume-builder
+./kdnk.sh setup
+./kdnk.sh run resume-builder
 ```
 
-`./smith.sh clear resume-builder` deletes the example's data.
+`./kdnk.sh clear resume-builder` deletes the example's data.

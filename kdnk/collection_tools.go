@@ -1,4 +1,4 @@
-package agentsmith
+package kdnk
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 const (

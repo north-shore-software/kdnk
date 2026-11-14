@@ -1,5 +1,5 @@
-// Package agentsmith builds persistent, multi-user chat-agent apps from a single setup function.
-package agentsmith
+// Package kdnk builds persistent, multi-user chat-agent apps from a single setup function.
+package kdnk
 
 import (
 	"context"
@@ -11,10 +11,10 @@ import (
 
 	"github.com/pocketbase/pocketbase/core"
 
-	"github.com/north-shore-software/agent-smith/internal/chat"
-	"github.com/north-shore-software/agent-smith/internal/plugin"
-	"github.com/north-shore-software/agent-smith/internal/server"
-	"github.com/north-shore-software/agent-smith/providers"
+	"github.com/north-shore-software/kdnk/internal/chat"
+	"github.com/north-shore-software/kdnk/internal/plugin"
+	"github.com/north-shore-software/kdnk/internal/server"
+	"github.com/north-shore-software/kdnk/providers"
 )
 
 // Registry collects what an app defines during setup. It is frozen once setup returns.
@@ -100,16 +100,16 @@ func Run(setup func(*Registry) error) error {
 func (r *Registry) validate() error {
 	errs := r.errs
 	if r.providerCalls > 1 {
-		errs = append(errs, errors.New("agentsmith: Provider called more than once"))
+		errs = append(errs, errors.New("kdnk: Provider called more than once"))
 	}
 	if r.provider == nil {
-		errs = append(errs, errors.New("agentsmith: no provider registered"))
+		errs = append(errs, errors.New("kdnk: no provider registered"))
 	}
 	if r.webCalls > 1 {
-		errs = append(errs, errors.New("agentsmith: Web called more than once"))
+		errs = append(errs, errors.New("kdnk: Web called more than once"))
 	}
 	if r.promptCalls > 1 {
-		errs = append(errs, errors.New("agentsmith: system prompt set more than once"))
+		errs = append(errs, errors.New("kdnk: system prompt set more than once"))
 	}
 	reserved := []string{"users", chat.CollectionConversation, chat.CollectionMessage}
 	seen := map[string]bool{}
@@ -118,13 +118,13 @@ func (r *Registry) validate() error {
 		key := strings.ToLower(name)
 		switch {
 		case name == "" || strings.HasPrefix(name, "_"):
-			errs = append(errs, fmt.Errorf("agentsmith: collection name %q is not allowed", name))
+			errs = append(errs, fmt.Errorf("kdnk: collection name %q is not allowed", name))
 		case seen[key]:
-			errs = append(errs, fmt.Errorf("agentsmith: collection %q registered more than once", name))
+			errs = append(errs, fmt.Errorf("kdnk: collection %q registered more than once", name))
 		}
 		for _, rn := range reserved {
 			if key == strings.ToLower(rn) {
-				errs = append(errs, fmt.Errorf("agentsmith: collection name %q is reserved", name))
+				errs = append(errs, fmt.Errorf("kdnk: collection name %q is reserved", name))
 			}
 		}
 		seen[key] = true
@@ -132,7 +132,7 @@ func (r *Registry) validate() error {
 	tools := map[string]bool{}
 	for _, t := range r.tools {
 		if tools[t.def.Name] {
-			errs = append(errs, fmt.Errorf("agentsmith: tool %q registered more than once", t.def.Name))
+			errs = append(errs, fmt.Errorf("kdnk: tool %q registered more than once", t.def.Name))
 		}
 		tools[t.def.Name] = true
 	}
@@ -143,7 +143,7 @@ type registryPlugin struct {
 	r *Registry
 }
 
-func (registryPlugin) Name() string { return "agentsmith" }
+func (registryPlugin) Name() string { return "kdnk" }
 
 func (p registryPlugin) Collections() []*core.Collection {
 	cols := make([]*core.Collection, 0, len(p.r.collections))
@@ -183,5 +183,5 @@ func (p registryPlugin) ExecuteTool(ctx context.Context, app core.App, s plugin.
 		}
 		return string(b), nil
 	}
-	return "", fmt.Errorf("agentsmith: unknown tool %q", name)
+	return "", fmt.Errorf("kdnk: unknown tool %q", name)
 }

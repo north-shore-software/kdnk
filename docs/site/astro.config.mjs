@@ -11,7 +11,7 @@ const pages = (dir) =>
 export default defineConfig({
   integrations: [
     starlight({
-      title: 'Agent Smith',
+      title: 'kdnk',
       sidebar: [
         { label: 'Start here', items: ['quickstart'] },
         { label: 'Guides', items: ['apps', 'server', 'providers'] },
