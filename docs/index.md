@@ -5,7 +5,7 @@ title: kdnk
 ## What it is
 
 kdnk is a Go library for apps whose main interface is a chat with an LLM. You write a setup
-function that registers a model provider, a system prompt, collections of records and tools. Agent
+function that registers a model provider, a system prompt, collections of records and tools.
 kdnk turns that into a single server binary that handles:
 
 - user accounts, including guest users who can later add an email and password
