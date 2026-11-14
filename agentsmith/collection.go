@@ -30,6 +30,7 @@ func (restriction) collectionOption() {}
 const (
 	appendOnly restriction = iota + 1
 	readOnly
+	hidden
 )
 
 var (
@@ -38,6 +39,8 @@ var (
 	AppendOnly CollectionOption = appendOnly
 	// ReadOnly limits the model to listing and getting records. It does not restrict Go code.
 	ReadOnly CollectionOption = readOnly
+	// Hidden gives the model no tools for the collection. It does not restrict Go code.
+	Hidden CollectionOption = hidden
 )
 
 // Record is a stored record of a collection whose fields are T.
@@ -76,10 +79,11 @@ const (
 )
 
 type field struct {
-	index []int
-	name  string
-	desc  string
-	kind  fieldKind
+	index     []int
+	name      string
+	desc      string
+	kind      fieldKind
+	omitEmpty bool
 }
 
 var timeType = reflect.TypeFor[time.Time]()
@@ -107,7 +111,7 @@ func Collection[T any](r *Registry, name string, opts ...CollectionOption) *Stor
 			c.restriction = rs
 		}
 	}
-	fields, err := structFields(reflect.TypeFor[T]())
+	fields, err := structFields(reflect.TypeFor[T](), reservedFields)
 	if err != nil {
 		r.errs = append(r.errs, fmt.Errorf("agentsmith: collection %q: %w", name, err))
 	}
@@ -117,7 +121,7 @@ func Collection[T any](r *Registry, name string, opts ...CollectionOption) *Stor
 	return c
 }
 
-func structFields(t reflect.Type) ([]field, error) {
+func structFields(t reflect.Type, reserved []string) ([]field, error) {
 	if t.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("type %s is not a struct", t)
 	}
@@ -135,11 +139,11 @@ func structFields(t reflect.Type) ([]field, error) {
 		if tag == "-" {
 			continue
 		}
-		name, _, _ := strings.Cut(tag, ",")
+		name, opts, _ := strings.Cut(tag, ",")
 		if name == "" {
 			name = sf.Name
 		}
-		for _, r := range reservedFields {
+		for _, r := range reserved {
 			if strings.EqualFold(name, r) {
 				return nil, fmt.Errorf("field name %q is reserved", name)
 			}
@@ -152,7 +156,11 @@ func structFields(t reflect.Type) ([]field, error) {
 		if !ok {
 			return nil, fmt.Errorf("field %s has unsupported type %s", sf.Name, sf.Type)
 		}
-		fields = append(fields, field{index: sf.Index, name: name, desc: sf.Tag.Get("jsonschema"), kind: kind})
+		omitEmpty := false
+		for _, o := range strings.Split(opts, ",") {
+			omitEmpty = omitEmpty || o == "omitempty"
+		}
+		fields = append(fields, field{index: sf.Index, name: name, desc: sf.Tag.Get("jsonschema"), kind: kind, omitEmpty: omitEmpty})
 	}
 	return fields, nil
 }

@@ -76,7 +76,8 @@ func getTime(ctx context.Context, app core.App, s agentsmith.Session, _ struct{}
   the arguments into that type, runs the handler, and passes the result back to the model as JSON.
 
 A collection can be restricted to append-only, where the model can add records but not change or
-delete them, or to read-only, where only your code writes to it.
+delete them, to read-only, where only your code writes to it, or hidden, where the model gets no
+tools for it at all.
 
 ## Start the server
 

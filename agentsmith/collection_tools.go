@@ -31,14 +31,20 @@ func (c *Store[T]) tools() []tool {
 		return []tool{c.createTool(), c.listTool(), c.getTool()}
 	case readOnly:
 		return []tool{c.listTool(), c.getTool()}
+	case hidden:
+		return nil
 	}
 	return []tool{c.createTool(), c.listTool(), c.getTool(), c.updateTool(), c.deleteTool()}
 }
 
 func (c *Store[T]) properties() (map[string]any, []string) {
+	return fieldProperties(c.fields)
+}
+
+func fieldProperties(fields []field) (map[string]any, []string) {
 	props := map[string]any{}
-	names := make([]string, 0, len(c.fields))
-	for _, f := range c.fields {
+	names := make([]string, 0, len(fields))
+	for _, f := range fields {
 		p := map[string]any{}
 		switch f.kind {
 		case kindText:

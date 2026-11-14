@@ -17,8 +17,6 @@ import (
 	"github.com/north-shore-software/agent-smith/providers"
 )
 
-var errNotImplemented = errors.New("agentsmith: not implemented")
-
 // Registry collects what an app defines during setup. It is frozen once setup returns.
 type Registry struct {
 	tools         []tool
@@ -29,6 +27,7 @@ type Registry struct {
 	web           fs.FS
 	webCalls      int
 	prompt        string
+	promptFn      func(ctx context.Context, app core.App, s Session) (string, error)
 	promptCalls   int
 }
 
@@ -56,22 +55,33 @@ func (r *Registry) Web(fsys fs.FS) {
 }
 
 // SystemPrompt sets the system prompt sent to the model at the start of every chat request. An
-// empty prompt sends no system message. Calling it more than once makes Run return an error.
+// empty prompt sends no system message. Calling it more than once, or calling SystemPromptFunc as
+// well, makes Run return an error.
 func (r *Registry) SystemPrompt(prompt string) {
 	r.prompt = prompt
 	r.promptCalls++
 }
 
+// SystemPromptFunc sets the function that builds the system prompt, called once per chat request
+// before the first model call. An empty result sends no system message, and an error fails the
+// request. A nil fn sends no system message. Calling it more than once, or calling SystemPrompt as
+// well, makes Run return an error.
+func (r *Registry) SystemPromptFunc(fn func(ctx context.Context, app core.App, s Session) (string, error)) {
+	r.promptFn = fn
+	r.promptCalls++
+}
+
 // Run calls setup with a new Registry, then runs the PocketBase command line (serve, migrate and
 // so on) for an app built from what setup registered. It returns setup's error; an error if
-// Provider was not called, was called with nil, or was called more than once, if Web or
-// SystemPrompt was called more than once, if a collection's type is invalid, if two collections or
-// two tools share a name, or if a collection is named users, chat_conversation or chat_message, or
-// starts with an underscore; or the command line's error.
+// Provider was not called, was called with nil, or was called more than once, if Web was called
+// more than once, if SystemPrompt and SystemPromptFunc were called more than once between them,
+// if a collection's or a Tool's type is invalid, if two collections or two tools share a name, or
+// if a collection is named users, chat_conversation or chat_message, or starts with an
+// underscore; or the command line's error.
 //
 // Collection tables are created or extended when the server starts serving, and the tools of
-// every collection and every Tool are offered to the model, along with the prompt passed to
-// SystemPrompt, if any. The files passed to Web, if any, are served as the web UI.
+// every collection and every Tool are offered to the model, along with the system prompt set by
+// SystemPrompt or SystemPromptFunc, if any. The files passed to Web, if any, are served as the web UI.
 func Run(setup func(*Registry) error) error {
 	r := &Registry{}
 	if err := setup(r); err != nil {
@@ -99,7 +109,7 @@ func (r *Registry) validate() error {
 		errs = append(errs, errors.New("agentsmith: Web called more than once"))
 	}
 	if r.promptCalls > 1 {
-		errs = append(errs, errors.New("agentsmith: SystemPrompt called more than once"))
+		errs = append(errs, errors.New("agentsmith: system prompt set more than once"))
 	}
 	reserved := []string{"users", chat.CollectionConversation, chat.CollectionMessage}
 	seen := map[string]bool{}
@@ -143,7 +153,10 @@ func (p registryPlugin) Collections() []*core.Collection {
 	return cols
 }
 
-func (p registryPlugin) SystemPrompt(context.Context, core.App, plugin.Session) (string, error) {
+func (p registryPlugin) SystemPrompt(ctx context.Context, app core.App, s plugin.Session) (string, error) {
+	if p.r.promptFn != nil {
+		return p.r.promptFn(ctx, app, Session{UserID: s.UserID, ConversationID: s.ConversationID})
+	}
 	return p.r.prompt, nil
 }
 
