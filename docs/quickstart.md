@@ -7,7 +7,7 @@ and tell the time.
 
 ## Requirements
 
-- Go 1.24.1 or newer
+- Go 1.27 or newer
 - A Gemini API key, from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ## Create a module
