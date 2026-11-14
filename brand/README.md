@@ -24,8 +24,8 @@ All letters are converted to vector outlines (JetBrains Mono ExtraBold / Regular
 
 ```html
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/kdnk-banner-dark.svg">
-  <img alt="kdnk: Describe the app. kdnk does the plumbing." src="brand/kdnk-banner-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/kdnk-banner-dark.svg">
+  <img alt="kdnk" src="docs/assets/kdnk-banner-light.svg">
 </picture>
 ```
 
