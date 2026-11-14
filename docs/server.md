@@ -10,8 +10,7 @@ title: Server configuration
 ./myapp serve --http=127.0.0.1:8090 --dir ./pb_data
 ```
 
-`--dir` is where the SQLite database lives, `pb_data` next to the binary by default. On first
-start, PocketBase prints a link for creating a superuser for the admin dashboard at `/_/`.
+`--dir` is where the SQLite database lives, `pb_data` next to the binary by default.
 
 The `migrate` command is available too. kdnk's own tables are created by a migration that
 runs automatically. Your collections' tables are not migrations: they are created or extended

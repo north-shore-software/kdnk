@@ -32,10 +32,10 @@ type Config struct {
 // New returns a PocketBase app that serves cfg.Plugin. It exits the process with log.Fatal if
 // cfg.Plugin is nil.
 //
-// When the app starts serving, it creates or extends the plugin's collections as described on
-// plugin.Plugin.Collections, enables a default set of rate limits if rate limiting is off, schedules a daily 03:00 job that
-// deletes guest users created over 30 days ago with no message in the last 30 days, and registers
-// these routes:
+// When the app starts serving, it disables PocketBase's first-start superuser installer, creates or
+// extends the plugin's collections as described on plugin.Plugin.Collections, enables a default set
+// of rate limits if rate limiting is off, schedules a daily 03:00 job that deletes guest users
+// created over 30 days ago with no message in the last 30 days, and registers these routes:
 //
 //   - POST /api/guest creates a guest user and returns its auth token and generated credentials.
 //   - POST /api/guest/upgrade gives the authenticated guest an email and password, making it a regular user.
@@ -52,6 +52,8 @@ func New(cfg Config) *pocketbase.PocketBase {
 	})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		se.InstallerFunc = nil
+
 		if err := ensureCollections(app, cfg.Plugin); err != nil {
 			return err
 		}

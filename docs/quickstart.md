@@ -3,7 +3,7 @@ title: Quickstart
 ---
 
 This walkthrough builds a small kdnk app: a chat assistant that can save notes, list them,
-and tell the time. You will run it locally and talk to it from the terminal.
+and tell the time.
 
 ## Requirements
 
@@ -61,8 +61,7 @@ func getTime(ctx context.Context, app core.App, s kdnk.Session, _ struct{}) (any
 }
 ```
 
-- `Run` calls `setup`, then starts the command line: `serve` runs the server and `chat` talks
-  to it.
+- `Run` calls `setup`, then starts the command line (`serve` runs the server).
 - `Provider` sets the model that answers chat requests. `providers.Gemini` reads `GEMINI_API_KEY`.
 - `SystemPrompt` is sent to the model at the start of every chat request.
 - `Collection` declares a collection of `Note` records named `notes`. kdnk creates the
@@ -86,36 +85,10 @@ go mod tidy
 GEMINI_API_KEY=your-key go run . serve
 ```
 
-The server listens on `http://127.0.0.1:8090`. On first start it prints a link for creating an
-admin account for the database dashboard; you do not need it for this walkthrough.
-
-## Chat with it
-
-In a second terminal, in the same directory:
-
-```sh
-go run . chat
-```
-
-`chat` connects to the server at `http://127.0.0.1:8090` (change it with `--url`), signs in as a
-new guest user, and starts a conversation. Tool calls are shown in brackets. Press Ctrl-D to quit.
-
-```text
-> remember that the bins go out on Thursday
-[notes_create]
-Noted: the bins go out on Thursday.
-> what time is it?
-[get_time]
-It's 14:02 on Friday 13 November.
-> what are my notes?
-[notes_list]
-You have one note: the bins go out on Thursday.
-```
-
-`chat` talks to the server over the same HTTP API as any other client: `POST /api/guest` to get a
-guest user, then `POST /api/chat`, which streams replies in the
+The server listens on `http://127.0.0.1:8090` and exposes `POST /api/guest` to create a guest user
+and `POST /api/chat` to stream replies in the
 [AI SDK UI message stream](https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol) format. A web
-frontend built with the AI SDK's `useChat` can talk to the same server.
+frontend built with the AI SDK's `useChat` can talk to the server directly.
 
 :::note
 An OpenAI-compatible endpoint, so that tools such as [`llm`](https://llm.datasette.io/) and
