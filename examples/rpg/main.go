@@ -11,7 +11,7 @@ import (
 	"github.com/north-shore-software/kdnk/providers"
 )
 
-//go:embed web
+//go:embed all:web/dist
 var webAssets embed.FS
 
 func main() {
@@ -25,7 +25,7 @@ func setup(r *kdnk.Registry) error {
 	if err != nil {
 		return err
 	}
-	web, err := fs.Sub(webAssets, "web")
+	web, err := fs.Sub(webAssets, "web/dist/app")
 	if err != nil {
 		return err
 	}

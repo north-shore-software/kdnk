@@ -8,3 +8,6 @@ examples/**/bin/
 /docs/site/node_modules/
 /docs/site/dist/
 /docs/site/.astro/
+examples/*/web/node_modules/
+examples/*/web/dist/*
+!examples/*/web/dist/.gitkeep
