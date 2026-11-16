@@ -14,6 +14,7 @@
     "astro": "^7.4.11"
   },
   "devDependencies": {
-    "@omniaura/astro-grab": "^1.2.0"
+    "@omniaura/astro-grab": "^1.2.0",
+    "astro-agent-annotate": "^0.0.2"
   }
 }

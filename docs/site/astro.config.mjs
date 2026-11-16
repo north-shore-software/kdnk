@@ -12,6 +12,7 @@ const pages = (dir) =>
 export default defineConfig({
   integrations: [
     astroGrab(),
+    astroAgentAnnotate(),
     starlight({
       title: 'kdnk',
       logo: {

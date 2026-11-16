@@ -201,6 +201,9 @@ importers:
       '@omniaura/astro-grab':
         specifier: ^1.2.0
         version: 1.2.0(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1))(vite@8.3.8(@types/node@24.19.2)(yaml@2.9.1))
+      astro-agent-annotate:
+        specifier: ^0.0.2
+        version: 0.0.2(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1))
 
 packages:
 
@@ -925,6 +928,11 @@ packages:
   aria-query@5.3.2:
     resolution: {integrity: sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==}
     engines: {node: '>= 0.4'}
+
+  astro-agent-annotate@0.0.2:
+    resolution: {integrity: sha512-t/qymOQRlF9B0w/MNObNJBl+zU6Mt8sHxMGjw67y6Lj8q+mTqUTdm1TL+qR7/72fil8n4WovEQDU3WhGic3QTg==}
+    peerDependencies:
+      astro: ^4.0.0 || ^5.0.0
 
   astro-expressive-code@0.44.3:
     resolution: {integrity: sha512-LUpQmmvzr90JXP5QIAopgdjlOKLuT3x0wlPAUpc4OZtPtFS8sbflPcGPpL/lG3pQuUCQV2CXUFgYNBYNu9tphA==}
@@ -2462,6 +2470,10 @@ snapshots:
   arg@5.0.2: {}
 
   aria-query@5.3.2: {}
+
+  astro-agent-annotate@0.0.2(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1)):
+    dependencies:
+      astro: 7.4.11(@types/node@24.19.2)(yaml@2.9.1)
 
   astro-expressive-code@0.44.3(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1)):
     dependencies:
