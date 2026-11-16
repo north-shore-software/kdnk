@@ -114,20 +114,29 @@ type ollamaTool struct {
 	Function ollamaFunction `json:"function"`
 }
 
+type ollamaMessage struct {
+	Role      string           `json:"role"`
+	Content   string           `json:"content"`
+	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
+	ToolName  string           `json:"tool_name,omitempty"`
+}
+
 type ollamaChatRequest struct {
-	Model     string         `json:"model"`
-	Messages  []Message      `json:"messages"`
-	Stream    bool           `json:"stream"`
-	KeepAlive string         `json:"keep_alive,omitempty"`
-	Options   map[string]any `json:"options,omitempty"`
-	Tools     []ollamaTool   `json:"tools,omitempty"`
+	Model     string          `json:"model"`
+	Messages  []ollamaMessage `json:"messages"`
+	Stream    bool            `json:"stream"`
+	KeepAlive string          `json:"keep_alive,omitempty"`
+	Options   map[string]any  `json:"options,omitempty"`
+	Tools     []ollamaTool    `json:"tools,omitempty"`
+}
+
+type ollamaFunctionCall struct {
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"`
 }
 
 type ollamaToolCall struct {
-	Function struct {
-		Name      string          `json:"name"`
-		Arguments json.RawMessage `json:"arguments"`
-	} `json:"function"`
+	Function ollamaFunctionCall `json:"function"`
 }
 
 type ollamaChatChunk struct {
@@ -159,7 +168,8 @@ func normalizeArguments(raw json.RawMessage) json.RawMessage {
 // OllamaContextLength, and keeps the model loaded for 60 minutes. It returns an error only if
 // the request cannot be sent: a non-200 response is not detected and yields an empty stream. Each
 // tool call is emitted as an EventToolStart followed by an EventToolEnd, with string-encoded
-// arguments decoded to raw JSON.
+// arguments decoded to raw JSON. An "assistant" message's ToolCalls are sent as tool_calls, and a
+// "tool" message is sent with its ToolName as tool_name.
 func (p *Ollama) Stream(ctx context.Context, messages []Message, tools []Tool) (*Completion, error) {
 	modelName := p.ModelName()
 
@@ -178,9 +188,18 @@ func (p *Ollama) Stream(ctx context.Context, messages []Message, tools []Tool) (
 		}
 	}
 
+	oMessages := make([]ollamaMessage, 0, len(messages))
+	for _, m := range messages {
+		om := ollamaMessage{Role: m.Role, Content: m.Content, ToolName: m.ToolName}
+		for _, tc := range m.ToolCalls {
+			om.ToolCalls = append(om.ToolCalls, ollamaToolCall{Function: ollamaFunctionCall{Name: tc.Name, Arguments: orEmptyObject(tc.Args)}})
+		}
+		oMessages = append(oMessages, om)
+	}
+
 	body, err := json.Marshal(ollamaChatRequest{
 		Model:     modelName,
-		Messages:  messages,
+		Messages:  oMessages,
 		Stream:    true,
 		KeepAlive: keepAlive,
 		Options:   map[string]any{"num_ctx": OllamaContextLength(ctx, modelName)},

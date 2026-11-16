@@ -197,6 +197,13 @@ importers:
       astro:
         specifier: ^7.4.11
         version: 7.4.11(@types/node@24.19.2)(yaml@2.9.1)
+    devDependencies:
+      '@omniaura/astro-grab':
+        specifier: ^1.2.0
+        version: 1.2.0(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1))(vite@8.3.8(@types/node@24.19.2)(yaml@2.9.1))
+      astro-agent-annotate:
+        specifier: ^0.0.2
+        version: 0.0.2(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1))
 
 packages:
 
@@ -270,6 +277,9 @@ packages:
   '@astrojs/compiler-rs@0.5.3':
     resolution: {integrity: sha512-rNSAYm5IcRJMpNm+cSMaaPNCmzCXIdiz67kcBwC1qN8eTmO48wEJ6hZdlGq60+0HIHwUlncfaMxti1Fk2uJu7w==}
     engines: {node: '>=22.12.0'}
+
+  '@astrojs/compiler@2.13.1':
+    resolution: {integrity: sha512-f3FN83d2G/v32ipNClRKgYv30onQlMZX1vCeZMjPsMMPl1mDpmbl0+N5BYo4S/ofzqJyS5hvwacEo0CCVDn/Qg==}
 
   '@astrojs/internal-helpers@0.13.2':
     resolution: {integrity: sha512-SWiNS+OMrhwWYzJENTekHUyUCMKB+tdU6D4v1ZNIU1ZHh2mScQ8WIs0J6AJ8KPXkIrs9+EZU7Rm2CstfThyVnw==}
@@ -675,6 +685,17 @@ packages:
       '@emnapi/core': ^1.7.1 || 2.0.0-beta.2 || 2.0.0-beta.3
       '@emnapi/runtime': ^1.7.1 || 2.0.0-beta.2 || 2.0.0-beta.3
 
+  '@omniaura/astro-grab@1.2.0':
+    resolution: {integrity: sha512-TQrxOWVESNTTQhpgvH4Sy3+25/+sVx1W9PKQRTw3GdcFvaFY0sX+nraGzDqAKsTwa2Pd3648pFNAKVLPg/5eOg==}
+    peerDependencies:
+      astro: '>=4.0.0'
+      vite: '>=5.0.0'
+    peerDependenciesMeta:
+      astro:
+        optional: true
+      vite:
+        optional: true
+
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
 
@@ -907,6 +928,11 @@ packages:
   aria-query@5.3.2:
     resolution: {integrity: sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==}
     engines: {node: '>= 0.4'}
+
+  astro-agent-annotate@0.0.2:
+    resolution: {integrity: sha512-t/qymOQRlF9B0w/MNObNJBl+zU6Mt8sHxMGjw67y6Lj8q+mTqUTdm1TL+qR7/72fil8n4WovEQDU3WhGic3QTg==}
+    peerDependencies:
+      astro: ^4.0.0 || ^5.0.0
 
   astro-expressive-code@0.44.3:
     resolution: {integrity: sha512-LUpQmmvzr90JXP5QIAopgdjlOKLuT3x0wlPAUpc4OZtPtFS8sbflPcGPpL/lG3pQuUCQV2CXUFgYNBYNu9tphA==}
@@ -1863,6 +1889,8 @@ snapshots:
     dependencies:
       '@astrojs/compiler-binding': 0.5.3
 
+  '@astrojs/compiler@2.13.1': {}
+
   '@astrojs/internal-helpers@0.13.2':
     dependencies:
       '@types/hast': 3.0.5
@@ -2259,6 +2287,13 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
+  '@omniaura/astro-grab@1.2.0(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1))(vite@8.3.8(@types/node@24.19.2)(yaml@2.9.1))':
+    dependencies:
+      '@astrojs/compiler': 2.13.1
+    optionalDependencies:
+      astro: 7.4.11(@types/node@24.19.2)(yaml@2.9.1)
+      vite: 8.3.8(@types/node@24.19.2)(yaml@2.9.1)
+
   '@oslojs/encoding@1.1.0': {}
 
   '@oxc-project/types@0.156.0': {}
@@ -2435,6 +2470,10 @@ snapshots:
   arg@5.0.2: {}
 
   aria-query@5.3.2: {}
+
+  astro-agent-annotate@0.0.2(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1)):
+    dependencies:
+      astro: 7.4.11(@types/node@24.19.2)(yaml@2.9.1)
 
   astro-expressive-code@0.44.3(astro@7.4.11(@types/node@24.19.2)(yaml@2.9.1)):
     dependencies:

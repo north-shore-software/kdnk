@@ -12,5 +12,9 @@
   "dependencies": {
     "@astrojs/starlight": "^0.42.11",
     "astro": "^7.4.11"
+  },
+  "devDependencies": {
+    "@omniaura/astro-grab": "^1.2.0",
+    "astro-agent-annotate": "^0.0.2"
   }
 }

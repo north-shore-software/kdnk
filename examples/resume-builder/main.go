@@ -6,23 +6,13 @@ import (
 	"io/fs"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/north-shore-software/kdnk/kdnk"
 	"github.com/north-shore-software/kdnk/providers"
 )
 
-//go:embed web
+//go:embed all:web/dist
 var webAssets embed.FS
-
-type Job struct {
-	Company  string `json:"company" jsonschema:"The employer's name"`
-	Title    string `json:"title" jsonschema:"The job title"`
-	Location string `json:"location" jsonschema:"Where the job was, e.g. a city or Remote"`
-	Start    string `json:"start" jsonschema:"When the job started, as YYYY-MM"`
-	End      string `json:"end" jsonschema:"When the job ended, as YYYY-MM, or empty if it is the current job"`
-	Summary  string `json:"summary" jsonschema:"What the user did and achieved there, as short bullet points"`
-}
 
 func main() {
 	if err := kdnk.Run(setup); err != nil {
@@ -35,21 +25,16 @@ func setup(r *kdnk.Registry) error {
 	if err != nil {
 		return err
 	}
-	web, err := fs.Sub(webAssets, "web")
+	web, err := fs.Sub(webAssets, "web/dist/app")
 	if err != nil {
 		return err
 	}
 	r.Provider(p)
-	r.SystemPrompt(strings.Join([]string{
-		"You help the user build the work-experience section of their resume.",
-		"Use jobs_create to record a job, jobs_list and jobs_get to read what is already recorded,",
-		"jobs_update to change one, and jobs_delete to remove one.",
-		"When the user describes a job, ask for anything missing (company, title, location, start and end month) before recording it,",
-		"and turn what they did into short, concrete bullet points that start with a verb.",
-		"After a tool returns, tell the user what happened in plain language.",
-	}, " "))
 	r.Web(web)
-	kdnk.Collection[Job](r, "jobs")
+	g := &game{states: kdnk.Collection[GameState](r, "game_state", kdnk.Hidden)}
+	r.SystemPromptFunc(g.systemPrompt)
+	kdnk.Tool(r, "ship_feature", "Ship a feature to users. Costs one week. The outcome depends on model quality and luck.", g.shipFeature)
+	kdnk.Tool(r, "tune_model", "Spend a week on evals and prompts instead of shipping. Costs one week and raises model quality.", g.tuneModel)
 	return nil
 }
 

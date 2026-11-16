@@ -2,6 +2,8 @@ package kdnk
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -23,7 +25,48 @@ type idArgs struct {
 	ID string `json:"id"`
 }
 
+type versionArgs struct {
+	ID      string `json:"id"`
+	Version string `json:"version"`
+}
+
 var idProperty = map[string]any{"type": "string", "description": "The record's ID."}
+
+var versionProperty = map[string]any{"type": "string", "description": "The record's version, as last returned for it."}
+
+func versionOf(data []byte) string {
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:8])
+}
+
+func (c *Store[T]) ifVersion(ctx context.Context, s Session, in versionArgs, write func(tx core.App, rec *core.Record) (any, error)) (any, error) {
+	if c.app == nil {
+		return nil, errUnbound
+	}
+	var out any
+	err := c.app.RunInTransaction(func(tx core.App) error {
+		rec, err := c.find(ctx, tx, s, in.ID)
+		if err != nil {
+			return err
+		}
+		cur := c.read(rec)
+		data, err := json.Marshal(cur.Data)
+		if err != nil {
+			return err
+		}
+		if versionOf(data) != in.Version {
+			b, err := c.toolRecord(cur)
+			if err != nil {
+				return err
+			}
+			out = map[string]any{"error": c.name + " record was modified since it was read", "current": b}
+			return nil
+		}
+		out, err = write(tx, rec)
+		return err
+	})
+	return out, err
+}
 
 func (c *Store[T]) tools() []tool {
 	switch c.restriction {
@@ -97,6 +140,9 @@ func (c *Store[T]) toolRecord(r Record[T]) (json.RawMessage, error) {
 		return nil, err
 	}
 	if m["created"], err = json.Marshal(r.Created); err != nil {
+		return nil, err
+	}
+	if m["version"], err = json.Marshal(versionOf(data)); err != nil {
 		return nil, err
 	}
 	return json.Marshal(m)
@@ -187,14 +233,15 @@ func (c *Store[T]) getTool() tool {
 func (c *Store[T]) updateTool() tool {
 	props, names := c.properties()
 	props["id"] = idProperty
+	props["version"] = versionProperty
 	return tool{
 		def: providers.Tool{
 			Name:        c.name + "_update",
-			Description: "Update a record in " + c.name + " by ID, replacing all of its fields.",
-			Parameters:  objectSchema(props, append([]string{"id"}, names...)),
+			Description: "Update a record in " + c.name + " by ID, replacing all of its fields. Fails and returns the current record if version is not the record's current version.",
+			Parameters:  objectSchema(props, append([]string{"id", "version"}, names...)),
 		},
 		run: func(ctx context.Context, _ core.App, s Session, args json.RawMessage) (any, error) {
-			var in idArgs
+			var in versionArgs
 			if err := decodeArgs(args, &in); err != nil {
 				return nil, err
 			}
@@ -202,11 +249,13 @@ func (c *Store[T]) updateTool() tool {
 			if err := decodeArgs(args, &v); err != nil {
 				return nil, err
 			}
-			r, err := c.Update(ctx, s, in.ID, v)
-			if err != nil {
-				return nil, err
-			}
-			return c.toolRecord(r)
+			return c.ifVersion(ctx, s, in, func(tx core.App, rec *core.Record) (any, error) {
+				c.write(rec, v)
+				if err := tx.SaveWithContext(ctx, rec); err != nil {
+					return nil, err
+				}
+				return c.toolRecord(c.read(rec))
+			})
 		},
 	}
 }
@@ -215,18 +264,20 @@ func (c *Store[T]) deleteTool() tool {
 	return tool{
 		def: providers.Tool{
 			Name:        c.name + "_delete",
-			Description: "Delete a record in " + c.name + " by ID.",
-			Parameters:  objectSchema(map[string]any{"id": idProperty}, []string{"id"}),
+			Description: "Delete a record in " + c.name + " by ID. Fails and returns the current record if version is not the record's current version.",
+			Parameters:  objectSchema(map[string]any{"id": idProperty, "version": versionProperty}, []string{"id", "version"}),
 		},
 		run: func(ctx context.Context, _ core.App, s Session, args json.RawMessage) (any, error) {
-			var in idArgs
+			var in versionArgs
 			if err := decodeArgs(args, &in); err != nil {
 				return nil, err
 			}
-			if err := c.Delete(ctx, s, in.ID); err != nil {
-				return nil, err
-			}
-			return map[string]string{"deleted": in.ID}, nil
+			return c.ifVersion(ctx, s, in, func(tx core.App, rec *core.Record) (any, error) {
+				if err := tx.DeleteWithContext(ctx, rec); err != nil {
+					return nil, err
+				}
+				return map[string]string{"deleted": in.ID}, nil
+			})
 		},
 	}
 }

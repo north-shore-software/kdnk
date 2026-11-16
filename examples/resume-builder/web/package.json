@@ -1,5 +1,5 @@
 {
-  "name": "kdnk-example-rpg",
+  "name": "kdnk-example-resume-builder",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.18.0",

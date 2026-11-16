@@ -147,9 +147,10 @@ func (s *streamWriter) drain(comp *providers.Completion, textID string) turn {
 			s.toolInputDelta(ev.ToolCallID, ev.Text)
 		case providers.EventToolEnd:
 			out.toolCalls = append(out.toolCalls, providers.ToolCall{
-				ID:   ev.ToolCallID,
-				Name: ev.ToolName,
-				Args: ev.Args,
+				ID:           ev.ToolCallID,
+				Name:         ev.ToolName,
+				Args:         ev.Args,
+				ProviderData: ev.ProviderData,
 			})
 			s.toolInputAvailable(ev.ToolCallID, ev.ToolName, ev.Args)
 		}

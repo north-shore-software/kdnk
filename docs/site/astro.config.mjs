@@ -1,5 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import astroGrab from '@omniaura/astro-grab';
+import astroAgentAnnotate from "astro-agent-annotate";
 import { readdirSync } from 'node:fs';
 
 const pages = (dir) =>
@@ -10,6 +12,8 @@ const pages = (dir) =>
 
 export default defineConfig({
   integrations: [
+    astroGrab(),
+    astroAgentAnnotate(),
     starlight({
       title: 'kdnk',
       logo: {
@@ -18,13 +22,27 @@ export default defineConfig({
         replacesTitle: true,
       },
       favicon: '/favicon.svg',
+      customCss: ['./src/styles/custom.css'],
       head: [
         { tag: 'link', attrs: { rel: 'icon', href: '/favicon.ico', sizes: '32x32' } },
         { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
       ],
       sidebar: [
-        { label: 'Start here', items: ['quickstart'] },
-        { label: 'Guides', items: ['apps', 'server', 'providers'] },
+        'index',
+        'quickstart',
+        {
+          label: 'Concepts',
+          items: [
+            'concepts/setup',
+            'concepts/sessions',
+            'concepts/collections',
+            'concepts/singletons',
+            'concepts/tools',
+            'concepts/system-prompt',
+            'concepts/providers',
+            'concepts/server',
+          ],
+        },
         { label: 'Examples', items: pages('examples') },
         { label: 'API reference', items: pages('reference') },
       ],

@@ -62,7 +62,6 @@ version_ge() {
 describe() {
 	case "$1" in
 		todo) printf 'a task list. Static system prompt; tools that write and read a growing collection.' ;;
-		rpg)  printf 'a short game about building an AI app. Per-conversation state, injected into the prompt every turn.' ;;
 		*)    printf 'a kdnk example.' ;;
 	esac
 }
@@ -70,7 +69,6 @@ describe() {
 first_message() {
 	case "$1" in
 		todo) printf 'add: file taxes, urgency 8, value 9' ;;
-		rpg)  printf "let's start" ;;
 		*)    printf 'hello' ;;
 	esac
 }
@@ -402,7 +400,14 @@ cmd_run() {
 		die "config has an unusable PORT ('$PORT'). Re-run: ./kdnk.sh setup"
 	fi
 
-	local example_arg="${1:-}"
+	local example_arg="" pb_dev=""
+	local arg
+	for arg in "$@"; do
+		case "$arg" in
+			--dev) pb_dev=1 ;;
+			*) [ -n "$example_arg" ] || example_arg="$arg" ;;
+		esac
+	done
 	local EXAMPLE
 	EXAMPLE="$(pick_example "$example_arg")"
 
@@ -446,6 +451,7 @@ having no effect."
 	fi
 
 	local server=("$REPO_ROOT/examples/$EXAMPLE/bin/$EXAMPLE" serve --http=127.0.0.1:"$PORT" --dir "$REPO_ROOT/examples/$EXAMPLE/pb_data")
+	[ -z "$pb_dev" ] || server+=(--dev)
 
 	if [ "$mode" = "run" ]; then
 		cat <<EOF
@@ -515,7 +521,9 @@ usage() {
 	say "Commands:"
 	say "  setup            Check tools, install JavaScript dependencies, and configure"
 	say "                   model set, API key, Ollama host, and port"
-	say "  run [example]    Build and run an example${names:+ ($names)}"
+	say "  run [example] [--dev]"
+	say "                   Build and run an example${names:+ ($names)}; --dev runs"
+	say "                   PocketBase in dev mode, with logs and SQL printed to the console"
 	say "  dev [example]    Run an example's server and its Vite dev server"
 	say "  clear [example]  Delete an example's local data"
 	say "  docs             Run the docs site dev server"
@@ -532,7 +540,7 @@ shift || true
 
 case "$subcmd" in
 	setup) cmd_setup ;;
-	run) cmd_run run "${1:-}" ;;
+	run) cmd_run run "$@" ;;
 	dev) cmd_run dev "${1:-}" ;;
 	clear) cmd_clear "${1:-}" ;;
 	docs) cmd_docs ;;

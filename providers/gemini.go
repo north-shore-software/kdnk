@@ -37,13 +37,52 @@ type geminiContent struct {
 }
 
 type geminiFunctionCall struct {
+	ID   string          `json:"id,omitempty"`
 	Name string          `json:"name"`
-	Args json.RawMessage `json:"args"`
+	Args json.RawMessage `json:"args,omitempty"`
+}
+
+type geminiFunctionResponse struct {
+	ID       string          `json:"id,omitempty"`
+	Name     string          `json:"name"`
+	Response json.RawMessage `json:"response"`
 }
 
 type geminiPart struct {
-	Text         string              `json:"text,omitempty"`
-	FunctionCall *geminiFunctionCall `json:"functionCall,omitempty"`
+	Text             string                  `json:"text,omitempty"`
+	FunctionCall     *geminiFunctionCall     `json:"functionCall,omitempty"`
+	FunctionResponse *geminiFunctionResponse `json:"functionResponse,omitempty"`
+	ThoughtSignature string                  `json:"thoughtSignature,omitempty"`
+}
+
+type geminiCallData struct {
+	Provider         string `json:"provider"`
+	ID               string `json:"id,omitempty"`
+	ThoughtSignature string `json:"thoughtSignature,omitempty"`
+}
+
+func decodeGeminiCallData(raw json.RawMessage) geminiCallData {
+	var d geminiCallData
+	if len(raw) == 0 || json.Unmarshal(raw, &d) != nil || d.Provider != "gemini" {
+		return geminiCallData{}
+	}
+	return d
+}
+
+func geminiResponse(output string) json.RawMessage {
+	result := json.RawMessage(output)
+	if !json.Valid(result) {
+		result, _ = json.Marshal(output)
+	}
+	b, _ := json.Marshal(map[string]json.RawMessage{"result": result})
+	return b
+}
+
+func orEmptyObject(args json.RawMessage) json.RawMessage {
+	if len(args) == 0 {
+		return json.RawMessage("{}")
+	}
+	return args
 }
 
 type geminiFunctionDeclaration struct {
@@ -76,10 +115,14 @@ type geminiStreamChunk struct {
 }
 
 // Stream implements Provider. System messages are joined into the system instruction, and
-// the "assistant" role is sent as Gemini's "model" role. It returns an error if GEMINI_API_KEY or
-// Model is empty, or if the request fails or returns a non-2xx status. Each tool call is emitted
-// as an EventToolStart followed by an EventToolEnd with the full arguments. A second call to the
-// same tool in one response is dropped. Usage has no TokensPerSecond.
+// the "assistant" role is sent as Gemini's "model" role, with its ToolCalls as functionCall parts.
+// Consecutive "tool" messages are sent as one "user" turn of functionResponse parts, each with the
+// response {"result": output}, where output is embedded as JSON if it is valid JSON and as a string
+// otherwise. It returns an error if GEMINI_API_KEY or Model is empty, or if the request fails or
+// returns a non-2xx status. Each tool call is emitted as an EventToolStart followed by an
+// EventToolEnd with the full arguments, "{}" if Gemini sent none, and ProviderData holding
+// Gemini's call ID and thought signature, which are sent back with the call. Usage has no
+// TokensPerSecond.
 func (p *Gemini) Stream(ctx context.Context, messages []Message, tools []Tool) (*Completion, error) {
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
@@ -91,23 +134,47 @@ func (p *Gemini) Stream(ctx context.Context, messages []Message, tools []Tool) (
 
 	contents := make([]geminiContent, 0, len(messages))
 	var systemText strings.Builder
+	geminiIDs := make(map[string]string)
 	for _, m := range messages {
-
-		if m.Role == "system" {
+		switch m.Role {
+		case "system":
 			if systemText.Len() > 0 {
 				systemText.WriteString("\n\n")
 			}
 			systemText.WriteString(m.Content)
+			continue
+		case "tool":
+			part := geminiPart{FunctionResponse: &geminiFunctionResponse{
+				ID:       geminiIDs[m.ToolCallID],
+				Name:     m.ToolName,
+				Response: geminiResponse(m.Content),
+			}}
+			if n := len(contents); n > 0 && contents[n-1].Role == "user" && contents[n-1].Parts[0].FunctionResponse != nil {
+				contents[n-1].Parts = append(contents[n-1].Parts, part)
+			} else {
+				contents = append(contents, geminiContent{Role: "user", Parts: []geminiPart{part}})
+			}
 			continue
 		}
 		role := m.Role
 		if role == "assistant" {
 			role = "model"
 		}
-		contents = append(contents, geminiContent{
-			Role:  role,
-			Parts: []geminiPart{{Text: m.Content}},
-		})
+		var parts []geminiPart
+		if m.Content != "" || len(m.ToolCalls) == 0 {
+			parts = append(parts, geminiPart{Text: m.Content})
+		}
+		for _, tc := range m.ToolCalls {
+			d := decodeGeminiCallData(tc.ProviderData)
+			if d.ID != "" {
+				geminiIDs[tc.ID] = d.ID
+			}
+			parts = append(parts, geminiPart{
+				FunctionCall:     &geminiFunctionCall{ID: d.ID, Name: tc.Name, Args: orEmptyObject(tc.Args)},
+				ThoughtSignature: d.ThoughtSignature,
+			})
+		}
+		contents = append(contents, geminiContent{Role: role, Parts: parts})
 	}
 
 	var systemInstruction *geminiContent
@@ -167,8 +234,7 @@ func (p *Gemini) Stream(ctx context.Context, messages []Message, tools []Tool) (
 		usage := Usage{Provider: "gemini", Model: p.ModelName()}
 		var sawUsage bool
 
-		activeCalls := make(map[string]string)
-		completedCalls := make(map[string]bool)
+		var calls int
 
 		scanner := bufio.NewScanner(resp.Body)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
@@ -203,34 +269,25 @@ func (p *Gemini) Stream(ctx context.Context, messages []Message, tools []Tool) (
 						return
 					}
 				}
-				if part.FunctionCall != nil && part.FunctionCall.Name != "" {
-					name := part.FunctionCall.Name
-					id := activeCalls[name]
+				if fc := part.FunctionCall; fc != nil && fc.Name != "" {
+					id := fc.ID
 					if id == "" {
-						id = fmt.Sprintf("call-%d", time.Now().UnixNano())
-						activeCalls[name] = id
-						select {
-						case ch <- StreamEvent{
-							Kind:       EventToolStart,
-							ToolCallID: id,
-							ToolName:   name,
-						}:
-						case <-ctx.Done():
-							return
-						}
+						id = fmt.Sprintf("call-%d-%d", time.Now().UnixNano(), calls)
 					}
-					if !completedCalls[name] && len(part.FunctionCall.Args) > 0 {
+					calls++
+					var data json.RawMessage
+					if fc.ID != "" || part.ThoughtSignature != "" {
+						data, _ = json.Marshal(geminiCallData{Provider: "gemini", ID: fc.ID, ThoughtSignature: part.ThoughtSignature})
+					}
+					for _, ev := range []StreamEvent{
+						{Kind: EventToolStart, ToolCallID: id, ToolName: fc.Name},
+						{Kind: EventToolEnd, ToolCallID: id, ToolName: fc.Name, Args: orEmptyObject(fc.Args), ProviderData: data},
+					} {
 						select {
-						case ch <- StreamEvent{
-							Kind:       EventToolEnd,
-							ToolCallID: id,
-							ToolName:   name,
-							Args:       part.FunctionCall.Args,
-						}:
+						case ch <- ev:
 						case <-ctx.Done():
 							return
 						}
-						completedCalls[name] = true
 					}
 				}
 			}

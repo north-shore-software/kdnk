@@ -6,29 +6,30 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <title>kdnk — resume-builder example</title>
 <style>
-  body { font-family: system-ui, sans-serif; margin: 0; background: #121212; color: #e6e6e6; }
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0; background: #0b0f0d; color: #b8d8c8; }
   main { max-width: 46rem; margin: 0 auto; padding: 2rem 1rem; }
-  h1 { font-size: 1.1rem; font-weight: 600; color: #9a9a9a; }
-  #chat { border: 1px solid #2c2c2c; border-radius: 6px; height: 26rem; overflow-y: auto; padding: 1rem; }
-  .msg { margin-bottom: 0.85rem; line-height: 1.5; white-space: pre-wrap; }
-  .role { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #7a7a7a; margin-bottom: 0.2rem; }
-  .tool { font-family: ui-monospace, monospace; font-size: 0.8rem; color: #6fd0a8; border-left: 2px solid #2f5c4a; padding-left: 0.6rem; margin-bottom: 0.85rem; white-space: pre-wrap; }
-  .err { color: #ff6b6b; }
+  h1 { font-size: 1.1rem; font-weight: 600; color: #5f7f6f; letter-spacing: 0.04em; }
+  #log { border: 1px solid #1e2b24; border-radius: 6px; height: 26rem; overflow-y: auto; padding: 1rem; background: #0d1411; }
+  .msg { margin-bottom: 0.85rem; line-height: 1.55; white-space: pre-wrap; }
+  .role { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #4d6a5b; margin-bottom: 0.2rem; }
+  .you .role { color: #7a8f5f; }
+  .tool { font-size: 0.78rem; color: #6fd0a8; border-left: 2px solid #24483a; padding-left: 0.6rem; margin-bottom: 0.85rem; white-space: pre-wrap; }
+  .err { color: #ff6b6b; border-left-color: #4a2222; }
   form { display: flex; gap: 0.5rem; margin-top: 1rem; }
-  input { flex: 1; padding: 0.6rem; background: #1c1c1c; color: #e6e6e6; border: 1px solid #2c2c2c; border-radius: 4px; }
-  button { padding: 0.6rem 1.1rem; border: 0; border-radius: 4px; background: #e6e6e6; color: #121212; font-weight: 600; cursor: pointer; }
-  button:disabled { opacity: 0.4; cursor: default; }
+  input { flex: 1; padding: 0.6rem; background: #0d1411; color: #b8d8c8; border: 1px solid #1e2b24; border-radius: 4px; font: inherit; }
+  button { padding: 0.6rem 1.1rem; border: 0; border-radius: 4px; background: #6fd0a8; color: #0b0f0d; font: inherit; font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: 0.35; cursor: default; }
   #auth { display: none; }
   #auth.show { display: flex; }
   #form.hide { display: none; }
   #account { margin: 0.7rem 0 0; text-align: right; font-size: 0.8rem; }
-  #account a { color: #7a7a7a; }
+  #account a { color: #4d6a5b; }
 </style>
 </head>
 <body>
 <main>
   <h1>kdnk — resume-builder example</h1>
-  <div id="chat"></div>
+  <div id="log"></div>
   <form id="auth">
     <input id="email" type="email" autocomplete="username" placeholder="email">
     <input id="password" type="password" autocomplete="current-password" placeholder="password">
@@ -36,14 +37,14 @@
     <button id="signin" type="button">Sign in</button>
   </form>
   <form id="form">
-    <input id="input" autocomplete="off" placeholder="Add a task, or ask what is on the list…">
-    <button id="send" type="submit">Send</button>
+    <input id="input" autocomplete="off" placeholder="Ship something, or spend the week on the model…">
+    <button id="send" type="submit">Act</button>
   </form>
   <p id="account"><a href="#" id="accountToggle">save your account</a></p>
 </main>
 
 <script>
-const chat = document.getElementById('chat');
+const log = document.getElementById('log');
 const form = document.getElementById('form');
 const input = document.getElementById('input');
 const send = document.getElementById('send');
@@ -71,16 +72,16 @@ const messages = [];
 
 function bubble(role, text) {
   const el = document.createElement('div');
-  el.className = 'msg';
+  el.className = role === 'you' ? 'msg you' : 'msg';
   const label = document.createElement('span');
   label.className = 'role';
-  label.textContent = role;
+  label.textContent = role === 'you' ? 'you' : 'game master';
   el.appendChild(label);
   const body = document.createElement('span');
   body.textContent = text || '';
   el.appendChild(body);
-  chat.appendChild(el);
-  chat.scrollTop = chat.scrollHeight;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
   return body;
 }
 
@@ -88,19 +89,19 @@ function note(text, extraClass) {
   const el = document.createElement('div');
   el.className = extraClass ? 'tool ' + extraClass : 'tool';
   el.textContent = text;
-  chat.appendChild(el);
-  chat.scrollTop = chat.scrollHeight;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
 }
 
 function handleFrame(frame, state) {
   if (frame.type === 'text-start') {
-    state.targets[frame.id] = bubble('assistant', '');
+    state.targets[frame.id] = bubble('gm', '');
   } else if (frame.type === 'text-delta') {
     const target = state.targets[frame.id];
     if (target) {
       target.textContent += frame.delta;
       state.text += frame.delta;
-      chat.scrollTop = chat.scrollHeight;
+      log.scrollTop = log.scrollHeight;
     }
   } else if (frame.type === 'tool-input-available') {
     note('→ ' + frame.toolName + ' ' + JSON.stringify(frame.input));
@@ -114,7 +115,7 @@ function handleFrame(frame, state) {
 function renderStored(msg) {
   for (const part of msg.parts || []) {
     if (part.type === 'text') {
-      if (part.text) bubble(msg.role === 'user' ? 'you' : 'assistant', part.text);
+      if (part.text) bubble(msg.role === 'user' ? 'you' : 'gm', part.text);
     } else if (part.type.startsWith('tool-') && part.data) {
       note('→ ' + part.data.toolName + ' ' + JSON.stringify(part.data.input));
       note('← ' + part.data.output);
@@ -143,6 +144,11 @@ async function loadHistory() {
     renderStored(rec.content);
     if (rec.content.role === 'user') messages.push(rec.content);
   }
+  return stored.items.length > 0;
+}
+
+function opening() {
+  bubble('gm', 'You have 50k of inference credits, burning 10k a week, and need 500k users. Say what you do.');
 }
 
 function isGuest() {
@@ -326,21 +332,26 @@ async function ensureAuth() {
 async function start() {
   await ensureAuth();
   setSignedIn(true);
+
+  let had;
   try {
-    await loadHistory();
+    had = await loadHistory();
   } catch (err) {
     if (err.status !== 401) throw err;
     signOut();
     await ensureAuth();
     setSignedIn(true);
-    await loadHistory();
+    had = await loadHistory();
   }
+
+  if (!had) opening();
 }
 
 start().catch((err) => {
   setSignedIn(false);
   note(String(err), 'err');
 });
+
 </script>
 </body>
 </html>

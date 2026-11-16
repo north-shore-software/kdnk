@@ -9,10 +9,16 @@ import (
 
 // Message is one message sent to a Provider.
 type Message struct {
-	// Role is the sender. The server uses "system", "user" and "assistant".
+	// Role is the sender: "system", "user", "assistant" or "tool".
 	Role string `json:"role"`
-	// Content is the message text.
+	// Content is the message text. In a "tool" message it is the tool's output.
 	Content string `json:"content"`
+	// ToolCalls is set on an "assistant" message to the tool calls the model made in it.
+	ToolCalls []ToolCall `json:"toolCalls,omitempty"`
+	// ToolCallID is set on a "tool" message to the ID of the ToolCall it answers.
+	ToolCallID string `json:"toolCallId,omitempty"`
+	// ToolName is set on a "tool" message to the name of the tool that produced it.
+	ToolName string `json:"toolName,omitempty"`
 }
 
 // Tool describes a function the model may call.
@@ -33,6 +39,9 @@ type ToolCall struct {
 	Name string `json:"name"`
 	// Args is the JSON arguments.
 	Args json.RawMessage `json:"args"`
+	// ProviderData is opaque data the Provider attached to the call. It must be sent back
+	// unchanged with the call; a Provider ignores data it did not create.
+	ProviderData json.RawMessage `json:"providerData,omitempty"`
 }
 
 // StreamEventKind identifies the kind of a StreamEvent.
@@ -46,7 +55,8 @@ const (
 	// EventToolArgDelta carries a chunk of a tool call's argument JSON in Text. The bundled
 	// providers do not emit it.
 	EventToolArgDelta
-	// EventToolEnd completes a tool call, with ToolCallID, ToolName and the full Args set.
+	// EventToolEnd completes a tool call, with ToolCallID, ToolName, the full Args and any
+	// ProviderData set.
 	EventToolEnd
 )
 
@@ -62,6 +72,8 @@ type StreamEvent struct {
 	ToolName string
 	// Args is the complete JSON arguments of the tool call.
 	Args json.RawMessage
+	// ProviderData is the tool call's ToolCall.ProviderData.
+	ProviderData json.RawMessage
 }
 
 // Usage reports token counts for a completed stream.
