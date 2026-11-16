@@ -27,8 +27,8 @@ underlying kinds:
 | `float32`, `float64` | number |
 | `time.Time` | date |
 
-Embedded fields, any other type, the names `id`, `owner` and `created`, and two fields with the
-same name make `Run` return an error.
+Embedded fields, any other type, the names `id`, `owner`, `created` and `version`, and two fields
+with the same name make `Run` return an error.
 
 **Hidden fields.** Every record also has an `owner`, the user who created it, and a `created`
 time. Records are deleted when their owner is.
@@ -44,12 +44,19 @@ Columns are never changed or removed.
 | `todos_create` | the struct's fields | the new record |
 | `todos_list` | `limit`, optional, 1 to 100, default 20 | records, newest first |
 | `todos_get` | `id` | the record |
-| `todos_update` | `id` and all the struct's fields | the updated record |
-| `todos_delete` | `id` | `{"deleted": "<id>"}` |
+| `todos_update` | `id`, `version` and all the struct's fields | the updated record |
+| `todos_delete` | `id` and `version` | `{"deleted": "<id>"}` |
 
-A record is returned to the model as the struct's JSON plus `id` and `created`. `todos_update`
-replaces every field. Every tool only sees the session user's records; another user's ID is
-reported as not found.
+A record is returned to the model as the struct's JSON plus `id`, `created` and `version`, which
+is derived from the record's fields. `todos_update` replaces every field. Every tool only sees the
+session user's records; another user's ID is reported as not found.
+
+`todos_update` and `todos_delete` take the `version` the model last read. If the record has changed
+since, they change nothing and return the current record:
+
+```json
+{"error": "todos record was modified since it was read", "current": {"id": "…", "created": "…", "title": "…", "urgency": 3, "version": "…"}}
+```
 
 **Restrictions.** Pass an option to limit which tools are generated. The last one passed wins.
 Restrictions apply to the model only; Go code can always use every method of the store.
@@ -67,7 +74,8 @@ once `Run` has started the app. Calling them earlier returns an error.
 - `Create(ctx, s, v)` adds a record and returns it.
 - `List(ctx, s, limit)` returns up to `limit` records, newest first. `limit` must be positive.
 - `Get(ctx, s, id)` returns a record.
-- `Update(ctx, s, id, v)` replaces a record's fields and returns it.
+- `Update(ctx, s, id, v)` replaces a record's fields and returns it. It is not checked against a
+  version.
 - `Delete(ctx, s, id)` removes a record.
 
 `Get`, `Update` and `Delete` return `kdnk.ErrNotFound` if the record doesn't exist or

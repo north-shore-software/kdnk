@@ -36,6 +36,7 @@ export default defineConfig({
             'concepts/setup',
             'concepts/sessions',
             'concepts/collections',
+            'concepts/singletons',
             'concepts/tools',
             'concepts/system-prompt',
             'concepts/providers',
