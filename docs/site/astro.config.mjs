@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import astroGrab from '@omniaura/astro-grab';
+import astroAgentAnnotate from "astro-agent-annotate";
 import { readdirSync } from 'node:fs';
 
 const pages = (dir) =>
