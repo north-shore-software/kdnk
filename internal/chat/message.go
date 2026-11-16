@@ -4,7 +4,6 @@ package chat
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/north-shore-software/kdnk/providers"
@@ -48,6 +47,8 @@ type ToolPartData struct {
 	Input json.RawMessage `json:"input"`
 	// Output is the string the tool returned.
 	Output string `json:"output"`
+	// ProviderData is the call's providers.ToolCall.ProviderData.
+	ProviderData json.RawMessage `json:"providerData,omitempty"`
 }
 
 // TextPart returns a text MessagePart containing text.
@@ -59,21 +60,16 @@ func TextPart(text string) MessagePart {
 // data cannot be marshalled.
 func ToolPart(call providers.ToolCall, output string) (MessagePart, error) {
 	b, err := json.Marshal(ToolPartData{
-		ToolCallID: call.ID,
-		ToolName:   call.Name,
-		Input:      call.Args,
-		Output:     output,
+		ToolCallID:   call.ID,
+		ToolName:     call.Name,
+		Input:        call.Args,
+		Output:       output,
+		ProviderData: call.ProviderData,
 	})
 	if err != nil {
 		return MessagePart{}, err
 	}
 	return MessagePart{Type: toolPartPrefix + call.Name, Data: b}, nil
-}
-
-// ToolResultText formats a tool's output as the text sent back to the model: "Result of <name>:
-// <output>".
-func ToolResultText(name, output string) string {
-	return fmt.Sprintf("Result of %s: %s", name, output)
 }
 
 // ExtractNewMessages returns the messages in incoming whose ID does not appear in dbMsgs, in their
@@ -93,34 +89,42 @@ func ExtractNewMessages(dbMsgs, incoming []Message) []Message {
 	return newMsgs
 }
 
-// Hydrate converts stored messages to provider messages. The text parts of each message are
-// concatenated into one providers.Message with the same role, omitted if empty. Each tool part
-// becomes a separate providers.Message with role "user" and ToolResultText content, placed after
-// the text. Tool parts whose Data does not decode are skipped.
+// Hydrate converts stored messages to provider messages. Each message becomes one
+// providers.Message with the same role, its text parts concatenated as Content and its tool parts
+// as ToolCalls, omitted if it has neither. Each tool part's output follows it as a separate
+// providers.Message with role "tool". Tool parts whose Data does not decode are skipped.
 func Hydrate(msgs []Message) []providers.Message {
 	var out []providers.Message
 	for _, m := range msgs {
-		var text string
+		msg := providers.Message{Role: m.Role}
 		var results []providers.Message
 
 		for _, p := range m.Parts {
 			switch {
 			case p.Type == PartTypeText:
-				text += p.Text
+				msg.Content += p.Text
 			case strings.HasPrefix(p.Type, toolPartPrefix):
 				var d ToolPartData
 				if err := json.Unmarshal(p.Data, &d); err != nil {
 					continue
 				}
+				msg.ToolCalls = append(msg.ToolCalls, providers.ToolCall{
+					ID:           d.ToolCallID,
+					Name:         d.ToolName,
+					Args:         d.Input,
+					ProviderData: d.ProviderData,
+				})
 				results = append(results, providers.Message{
-					Role:    "user",
-					Content: ToolResultText(d.ToolName, d.Output),
+					Role:       "tool",
+					Content:    d.Output,
+					ToolCallID: d.ToolCallID,
+					ToolName:   d.ToolName,
 				})
 			}
 		}
 
-		if text != "" {
-			out = append(out, providers.Message{Role: m.Role, Content: text})
+		if msg.Content != "" || len(msg.ToolCalls) > 0 {
+			out = append(out, msg)
 		}
 		out = append(out, results...)
 	}

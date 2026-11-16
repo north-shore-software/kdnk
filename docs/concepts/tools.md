@@ -32,11 +32,11 @@ When the model calls a tool, the server:
 3. JSON-encodes its result
 4. streams the result to the client as `tool-output-available`
 5. stores the call and its result in the conversation
-6. sends the result to the model as a user message, `Result of <name>: <output>`, and asks the
-   model again
+6. sends the call and its result back to the model through the provider's native tool-calling
+   format, and asks the model again
 
 If decoding fails, or the handler or a generated tool returns an error, the result is
 `{"error":"<message>"}`, and the model sees that instead.
 
-A chat request makes at most four model calls. Tool calls in the fourth response are streamed to
-the client but are not run.
+A chat request makes at most four model calls. The fourth is made without any tools, so the model
+has to answer in text.

@@ -26,9 +26,6 @@ variable.
   restart. Get one from [Google AI Studio](https://aistudio.google.com/apikey).
 - A request fails if the key or the model is empty, or if Gemini returns an error status.
 
-Known limitation: if the model calls the same tool twice in one response, the second call is
-dropped.
-
 ## Ollama
 
 `providers.Ollama` streams from a local or remote [Ollama](https://ollama.com/) server.

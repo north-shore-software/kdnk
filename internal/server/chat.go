@@ -104,9 +104,7 @@ func handleChat(app core.App, p plugin.Plugin, provider providers.Provider) func
 				break
 			}
 
-			if t.text != "" {
-				msgs = append(msgs, providers.Message{Role: "assistant", Content: t.text})
-			}
+			msgs = append(msgs, providers.Message{Role: "assistant", Content: t.text, ToolCalls: t.toolCalls})
 
 			for _, tc := range t.toolCalls {
 				out, err := p.ExecuteTool(ctx, app, sess, tc.Name, tc.Args)
@@ -119,14 +117,20 @@ func handleChat(app core.App, p plugin.Plugin, provider providers.Provider) func
 					stored.Parts = append(stored.Parts, part)
 				}
 				msgs = append(msgs, providers.Message{
-					Role:    "user",
-					Content: chat.ToolResultText(tc.Name, out),
+					Role:       "tool",
+					Content:    out,
+					ToolCallID: tc.ID,
+					ToolName:   tc.Name,
 				})
 			}
 
 			persist(stored)
 
-			comp, err = provider.Stream(ctx, msgs, tools)
+			next := tools
+			if step+2 >= maxToolSteps {
+				next = nil
+			}
+			comp, err = provider.Stream(ctx, msgs, next)
 			if err != nil {
 				sw.errorFrame(err.Error())
 				break
