@@ -1,5 +1,5 @@
 ---
-title: The setup function
+title: Setup
 ---
 
 An app is a function that takes an `*kdnk.Registry`. Pass it to `kdnk.Run` from

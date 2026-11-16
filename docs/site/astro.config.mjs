@@ -22,12 +22,14 @@ export default defineConfig({
         replacesTitle: true,
       },
       favicon: '/favicon.svg',
+      customCss: ['./src/styles/custom.css'],
       head: [
         { tag: 'link', attrs: { rel: 'icon', href: '/favicon.ico', sizes: '32x32' } },
         { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
       ],
       sidebar: [
-        { label: 'Start here', items: ['index', 'quickstart'] },
+        'index',
+        'quickstart',
         {
           label: 'Concepts',
           items: [
