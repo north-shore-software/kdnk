@@ -62,6 +62,7 @@ version_ge() {
 describe() {
 	case "$1" in
 		todo) printf 'a task list. Static system prompt; tools that write and read a growing collection.' ;;
+		resume-builder) printf 'a career audit that writes tailored resumes. A per-user profile singleton and five collections.' ;;
 		*)    printf 'a kdnk example.' ;;
 	esac
 }
@@ -69,6 +70,7 @@ describe() {
 first_message() {
 	case "$1" in
 		todo) printf 'add: file taxes, urgency 8, value 9' ;;
+		resume-builder) printf "hi, I'd like to start my career audit" ;;
 		*)    printf 'hello' ;;
 	esac
 }
