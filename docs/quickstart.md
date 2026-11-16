@@ -97,6 +97,6 @@ An OpenAI-compatible endpoint, so that tools such as [`llm`](https://llm.dataset
 
 ## Next steps
 
-- [Building an app](/apps/) covers collections, sessions and tools in depth.
-- [LLM providers](/providers/) covers Gemini and Ollama.
+- [Concepts](/concepts/setup/) cover the setup function, sessions, collections and tools in depth.
+- [LLM providers](/concepts/providers/) covers Gemini and Ollama.
 - [Example: todo](/examples/todo/) is a complete app with a web UI.

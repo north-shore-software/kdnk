@@ -62,7 +62,6 @@ version_ge() {
 describe() {
 	case "$1" in
 		todo) printf 'a task list. Static system prompt; tools that write and read a growing collection.' ;;
-		rpg)  printf 'a short game about building an AI app. Per-conversation state, injected into the prompt every turn.' ;;
 		*)    printf 'a kdnk example.' ;;
 	esac
 }
@@ -70,7 +69,6 @@ describe() {
 first_message() {
 	case "$1" in
 		todo) printf 'add: file taxes, urgency 8, value 9' ;;
-		rpg)  printf "let's start" ;;
 		*)    printf 'hello' ;;
 	esac
 }

@@ -15,7 +15,7 @@ title: Server configuration
 The `migrate` command is available too. kdnk's own tables are created by a migration that
 runs automatically. Your collections' tables are not migrations: they are created or extended
 each time the server starts serving, as described in
-[Building an app](/apps/#collections).
+[Collections](/concepts/collections/).
 
 ## Routes
 

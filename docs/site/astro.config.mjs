@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import astroGrab from '@omniaura/astro-grab';
 import { readdirSync } from 'node:fs';
 
 const pages = (dir) =>
@@ -10,6 +11,7 @@ const pages = (dir) =>
 
 export default defineConfig({
   integrations: [
+    astroGrab(),
     starlight({
       title: 'kdnk',
       logo: {
@@ -23,8 +25,19 @@ export default defineConfig({
         { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
       ],
       sidebar: [
-        { label: 'Start here', items: ['quickstart'] },
-        { label: 'Guides', items: ['apps', 'server', 'providers'] },
+        { label: 'Start here', items: ['index', 'quickstart'] },
+        {
+          label: 'Concepts',
+          items: [
+            'concepts/setup',
+            'concepts/sessions',
+            'concepts/collections',
+            'concepts/tools',
+            'concepts/system-prompt',
+            'concepts/providers',
+            'concepts/server',
+          ],
+        },
         { label: 'Examples', items: pages('examples') },
         { label: 'API reference', items: pages('reference') },
       ],
