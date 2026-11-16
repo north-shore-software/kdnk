@@ -68,7 +68,9 @@ func getTime(ctx context.Context, app core.App, s kdnk.Session, _ struct{}) (any
   table, and gives the model tools to manage it: `notes_create`, `notes_list`, `notes_get`,
   `notes_update` and `notes_delete`. Their arguments come from the fields of `Note`.
   `notes_list` returns up to a limit the model chooses. Each record belongs to the user who
-  created it, and a user only ever sees their own.
+  created it, and a user only ever sees their own. The tools return a `version` with each record;
+  `notes_update` and `notes_delete` take the version the model last read, and if the record has
+  changed since they change nothing and return the current record.
 - `Tool` registers a tool you write yourself, for anything that isn't a collection operation. The
   model is shown its name, its description, and a JSON Schema generated from the handler's
   argument type; `get_time` takes none (`struct{}`). When the model calls it, kdnk decodes

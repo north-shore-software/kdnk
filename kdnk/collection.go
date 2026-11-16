@@ -88,7 +88,7 @@ type field struct {
 
 var timeType = reflect.TypeFor[time.Time]()
 
-var reservedFields = []string{"id", "owner", "created"}
+var reservedFields = []string{"id", "owner", "created", "version"}
 
 // Collection declares a collection named name whose fields come from T, and adds its generated
 // tools to r. The last restriction in opts decides which tools are generated.
@@ -97,13 +97,17 @@ var reservedFields = []string{"id", "owner", "created"}
 // field name if the tag has no name; fields tagged json:"-" are skipped. A jsonschema tag gives
 // the field's description in the generated tools. Supported field types are strings, bools,
 // integers, floats and time.Time, including named types with those underlying kinds. Embedded
-// fields, other types, the names id, owner and created, and two fields with the same name make
-// Run return an error.
+// fields, other types, the names id, owner, created and version, and two fields with the same
+// name make Run return an error.
 //
 // Every record also has a hidden owner, the user who created it, and a created time. When the
 // server starts serving, the table is created if it does not exist; if it does, missing columns
 // are added, and a column whose type differs makes serving fail. Columns are never changed or
 // removed. Records are deleted with their owner.
+//
+// The generated tools return each record with a version derived from its fields. The update and
+// delete tools take the version the model last read, and change nothing if the record's fields
+// have changed since; they then return the current record instead.
 func Collection[T any](r *Registry, name string, opts ...CollectionOption) *Store[T] {
 	c := &Store[T]{name: name}
 	for _, o := range opts {
@@ -264,13 +268,13 @@ func storedTime(rec *core.Record, name string) time.Time {
 	return rec.GetDateTime(name).Time().UTC().Truncate(time.Millisecond)
 }
 
-func (c *Store[T]) find(ctx context.Context, s Session, id string) (*core.Record, error) {
+func (c *Store[T]) find(ctx context.Context, app core.App, s Session, id string) (*core.Record, error) {
 	col, err := c.collection()
 	if err != nil {
 		return nil, err
 	}
 	rec := &core.Record{}
-	err = c.app.RecordQuery(col).WithContext(ctx).
+	err = app.RecordQuery(col).WithContext(ctx).
 		AndWhere(dbx.HashExp{"id": id, "owner": s.UserID}).
 		Limit(1).
 		One(rec)
@@ -328,7 +332,7 @@ func (c *Store[T]) List(ctx context.Context, s Session, limit int) ([]Record[T],
 // Get returns the record with the given id if s's user owns it, and ErrNotFound otherwise. It
 // returns an error if called before Run has started the app.
 func (c *Store[T]) Get(ctx context.Context, s Session, id string) (Record[T], error) {
-	rec, err := c.find(ctx, s, id)
+	rec, err := c.find(ctx, c.app, s, id)
 	if err != nil {
 		return Record[T]{}, err
 	}
@@ -339,7 +343,7 @@ func (c *Store[T]) Get(ctx context.Context, s Session, id string) (Record[T], er
 // returns the updated record. It returns ErrNotFound if s's user does not own such a record, and
 // an error if called before Run has started the app.
 func (c *Store[T]) Update(ctx context.Context, s Session, id string, v T) (Record[T], error) {
-	rec, err := c.find(ctx, s, id)
+	rec, err := c.find(ctx, c.app, s, id)
 	if err != nil {
 		return Record[T]{}, err
 	}
@@ -353,7 +357,7 @@ func (c *Store[T]) Update(ctx context.Context, s Session, id string, v T) (Recor
 // Delete removes the record with the given id if s's user owns it. It returns ErrNotFound if s's
 // user does not own such a record, and an error if called before Run has started the app.
 func (c *Store[T]) Delete(ctx context.Context, s Session, id string) error {
-	rec, err := c.find(ctx, s, id)
+	rec, err := c.find(ctx, c.app, s, id)
 	if err != nil {
 		return err
 	}
